@@ -8,7 +8,7 @@ import glob
 import json
 
 from jinja2 import Environment, PackageLoader, select_autoescape, contextfunction
-
+from urllib.parse import urlparse
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 
 env = Environment(
@@ -17,16 +17,6 @@ env = Environment(
 )
 
 template = env.get_template('index.jinja2')
-
-
-class BaseUrlOverride(cherrypy.Tool):
-
-    def __init__(self):
-        cherrypy.Tool.__init__(self, 'before_request_body', self.setbaseurl)
-
-    def setbaseurl(self, baseurl=None):
-        if baseurl:
-            cherrypy.request.base = baseurl
 
 
 class Kitana(object):
@@ -40,6 +30,15 @@ class Kitana(object):
         self.plex_token = None
 
     def template_url(self, url):
+        if url.startswith("/:") or url.startswith("/library"):
+            url = self.BASE_URL + url[1:]
+            if urlparse(url).query:
+                url += '&'
+            else:
+                url += '?'
+            url += "X-Plex-Token={}".format(self.plex_token)
+            return url
+
         if not url.startswith(self.prefix):
             return self.prefix + url
         return url
@@ -50,7 +49,7 @@ class Kitana(object):
         }
         data = requests.get(self.BASE_URL + path, headers=headers)
         content = xmltodict.parse(data.content, attr_prefix="")
-        #print(json.dumps(content["MediaContainer"]))
+        print(json.dumps(content["MediaContainer"]))
         return template.render(data=content["MediaContainer"])
 
     @property
@@ -97,6 +96,9 @@ class Kitana(object):
 
 if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
+
+    prefix = "/"
+
     cherrypy.config.update(
         {
             'server.socket_host': '192.168.0.2',
@@ -107,11 +109,10 @@ if __name__ == "__main__":
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
-            # 'tools.baseurloverride.baseurl': "/peter",
-            # 'tools.baseurloverride.on': True
+            'tools.baseurloverride.baseurl': prefix,
+            'tools.baseurloverride.on': prefix != "/"
         }
     )
-    prefix = "/"
 
     SassCompilerPlugin(cherrypy.engine).subscribe()
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "templates", "**")))

@@ -1,6 +1,12 @@
 <html>
 <head>{% block head %}{% endblock %}
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
     <link rel="stylesheet" href="{{ url("/static/css/main.css") }}"/>
+    <style>
+        #content:before {
+            background-image: url('{{ url("/static/img/background.jpg") }}');
+        }
+    </style>
 </head>
 <body>
 {% block body %}{% endblock %}
