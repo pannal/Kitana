@@ -1,0 +1,9 @@
+{% extends "base.jinja2" %}
+{% block body %}
+<h1>{{ data.title1 }}</h1>
+<ul>
+    {% for d in data.Directory %}
+    <li><a href="{{ url(d.key) }}">{{ d.title }}</a></li>
+    {% endfor %}
+</ul>
+{% endblock %}
