@@ -1,17 +1,15 @@
 {% extends "base.jinja2" %}
-{% block body %}
-    <div id="content">
-        <h1>Kitana for Sub-Zero</h1>
-        <ul>
-            {% for d in data.Directory %}
-                <li>
-                    <a href="{{ url(d.key) }}">
-                        <div class="thumb"><img src="{{ url(d.thumb) }}" /></div>
-                        <div class="title">{{ d.title.strip() }}</div>
-                        <div class="summary">{{ d.summary }}</div>
-                    </a>
-                </li>
-            {% endfor %}
-        </ul>
-    </div>
+{% block content %}
+    <h1>Kitana for Sub-Zero</h1>
+    <ul>
+        {% for d in data.Directory %}
+            <li>
+                <a href="{{ url(d.key) }}">
+                    <div class="thumb"><img src="{{ url(d.thumb) }}" /></div>
+                    <div class="title">{{ d.title.strip() }}</div>
+                    <div class="summary">{{ d.summary }}</div>
+                </a>
+            </li>
+        {% endfor %}
+    </ul>
 {% endblock %}
