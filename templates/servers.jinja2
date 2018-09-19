@@ -1,0 +1,50 @@
+{% extends "base.jinja2" %}
+{% block head %}
+    <script>
+        $(function () {
+            $('#servers li').on("click", function (e) {
+                $el = $(e.target);
+                $('#servers [name="server_name"]').val($el.data("server_name"));
+                $('#servers [name="server_addr"]').val($el.data("server_addr"));
+                $('#servers').submit();
+            });
+        });
+    </script>
+    <script src="{{ url("/static/js/auth.js") }}"></script>
+{% endblock %}
+
+{% block content %}
+    <h2 class="text-center">Select Server</h2>
+    {% for server, data in servers.items() %}
+        <form method="post" id="servers">
+            <input type="hidden" name="server_name" value="" />
+            <input type="hidden" name="server_addr" value="" />
+            <div class="card text-white bg-dark mb-3" style="width: 50%; margin: 0 auto">
+                <div class="card-header">
+                    {{ server }}{% if data.owned %}&nbsp;<span class="badge badge-primary">owned</span>{% endif %}</div>
+                <div class="card-body">
+                    <ul class="list-group list-group-flush">
+                        {% for connection in data["connections"] %}
+                            <li class="list-group-item" data-server_name="{{ server }}" data-server_addr="{{ connection.uri }}">
+                                {{ connection.address }}:{{ connection.port }}&nbsp;
+                                {% if connection.local == "1" %}
+                                    <span class="badge badge-primary">local</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">remote</span>
+                                {% endif %}
+                                {% if connection.protocol == "https" %}
+                                    <span class="badge badge-success">HTTPS</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">HTTP</span>
+                                {% endif %}
+                                {% if connection.relay == "1" %}
+                                    <span class="badge badge-info">Relay</span>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            </div>
+        </form>
+    {% endfor %}
+{% endblock %}

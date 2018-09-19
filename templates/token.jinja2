@@ -1,10 +1,62 @@
 {% extends "base.jinja2" %}
+{% block head %}
+    <script>
+        var x_plex_headers = {{ plex_headers_json }};
+        const OAuthSuccessCallback = function (token) {
+            $.ajax({
+                url: location.href,
+                type: 'POST',
+                dataType: 'json',
+                data: {
+                    "token": token
+                },
+                success: function (data) {
+                    location.href = data.url;
+                }
+            });
+        };
+        const OAuthErrorCallback = function () {
+            console.log("ERROR")
+        };
 
-{% block body %}
-    <h1>Plex Token</h1>
-    <form method="post">
-        <div><label for="username">Username</label> <input type="text" name="username" id="username"/></div>
-        <div><label for="password">Password</label> <input type="password" name="password" id="password"/></div>
-        <div><input type="submit" value="Submit"/></div>
-    </form>
+        $(function () {
+            $('#sign-in-plex').on("click", function () {
+                PlexOAuth(OAuthSuccessCallback, OAuthErrorCallback);
+            });
+        });
+    </script>
+    <script src="{{ url("/static/js/auth.js") }}"></script>
+{% endblock %}
+
+{% block content %}
+    <div class="card text-white bg-dark mb-3" style="width: 50%; margin: 0 auto">
+        <div class="card-header">Plex.TV token</div>
+        <div class="card-body">
+            <div class="card-text">
+                <button id="sign-in-plex" class="btn btn-primary login-button btn-block"><i class="oi oi-account-login"></i>&nbsp; Sign
+                    In
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="card text-white bg-dark mb-3" style="width: 50%; margin: 0 auto">
+        <div class="card-header">Plex.TV credentials</div>
+        <div class="card-body">
+            <div class="card-text">
+                <form method="post">
+                    <div class="form-group"><label for="username">Username</label> <input type="text" name="username"
+                                                                                          id="username"
+                                                                                          class="form-control"
+                                                                                          placeholder="username"/></div>
+                    <div class="form-group"><label for="password">Password</label> <input type="password"
+                                                                                          name="password"
+                                                                                          id="password"
+                                                                                          class="form-control"
+                                                                                          placeholder="password"/></div>
+                    <button type="submit" value="Submit" class="btn btn-primary btn-block"><i class="oi oi-account-login"></i>&nbsp; Log In</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 {% endblock %}

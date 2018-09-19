@@ -1,16 +1,82 @@
 <html>
-<head>{% block head %}{% endblock %}
-    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet">
+<head>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css"
+          integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/open-iconic/1.1.1/font/css/open-iconic-bootstrap.min.css"
+          integrity="sha256-BJ/G+e+y7bQdrYkS2RBTyNfBHpA9IuGaPmf9htub5MQ=" crossorigin="anonymous"/>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.2.4/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js"
+            integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl"
+            crossorigin="anonymous"></script>
+
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:400,700" rel="stylesheet"/>
     <link rel="stylesheet" href="{{ url("/static/css/main.css") }}"/>
     <style>
         #content:before {
             background-image: url('{{ url("/static/img/background.jpg") }}');
         }
     </style>
+    {% block head %}{% endblock %}
 </head>
 <body>
 {% block body %}
-    <div id="content">{% block content %}{% endblock %}</div>
+    <div id="nav">
+        {% block nav %}
+            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+                <div class="container">
+                    <a class="navbar-brand" href="{{ url("/") }}">Kitana for Sub-Zero</a>
+                    <button class="navbar-toggler" type="button" data-toggle="collapse"
+                            data-target="#navbarSupportedContent"
+                            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+                        <span class="navbar-toggler-icon"></span>
+                    </button>
+
+                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                        <ul class="navbar-nav mr-auto">
+                            <!--<li class="nav-item active">
+                                <a class="nav-link" href="{{ url("/") }}">Home <span class="sr-only">(current)</span></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="#">Link</a>
+                            </li>
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
+                                   data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                    Dropdown
+                                </a>
+                                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                    <a class="dropdown-item" href="#">Action</a>
+                                    <a class="dropdown-item" href="#">Another action</a>
+                                    <div class="dropdown-divider"></div>
+                                    <a class="dropdown-item" href="#">Something else here</a>
+                                </div>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link disabled" href="#">Disabled</a>
+                            </li>
+                        </ul>
+                        <form class="form-inline my-2 my-lg-0">
+                            <input class="form-control mr-sm-2" type="search" placeholder="Search" aria-label="Search">
+                            <button class="btn btn-outline-success my-2 my-sm-0" type="submit">Search</button>
+                        </form>-->
+                        </ul>
+                        {% if logged_in %}
+                            <span class="navbar-text mr-3">
+                                {{ username }}
+                            </span>
+                            <a class="btn btn-outline-light btn-sm mr-3" href="{{ url("/servers") }}" role="button"><i class="oi oi-transfer"></i>&nbsp;{{ server_name }}</a>
+                            <a class="btn btn-dark" href="{{ url("/logout") }}" role="button"><i class="oi oi-account-logout"></i>&nbsp; Sign Out</a>
+                        {% else %}
+                            <a class="btn btn-primary" href="{{ url("/token") }}" role="button"><i class="oi oi-account-login"></i>&nbsp; Sign In</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </nav>
+        {% endblock %}
+    </div>
+    <div id="content" class="container">{% block content %}{% endblock %}</div>
 {% endblock %}
 </body>
 </html>
