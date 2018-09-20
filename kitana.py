@@ -11,14 +11,16 @@ import xmltodict
 import glob
 import json
 import uuid
+import urllib
 
 from jinja2 import Environment, PackageLoader, select_autoescape, contextfunction
 from urllib.parse import urlparse
-
+from cherrypy.lib.static import serve_file
 from requests import HTTPError, Timeout
 
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
+from tools.cache import BigMemoryCache
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -35,6 +37,7 @@ class Kitana(object):
     initialized = False
     timeout = 5
     plextv_timeout = 15
+    proxy_assets = True
 
     def __init__(self, prefix="/"):
         self.initialized = False
@@ -42,19 +45,24 @@ class Kitana(object):
         self.plex_token = None
         self.username = None
         self.server_name = None
-        self.server_addr = None
+        self.connection = None
         self.session = requests.Session()
         self.req_defaults = {"timeout": self.timeout}
+        self.proxy_assets = True
         self.initialized = True
 
     def template_url(self, url):
         if url.startswith("/:") or url.startswith("/library"):
-            url = self.server_addr + url[1:]
-            if urlparse(url).query:
-                url += '&'
+            if self.proxy_assets:
+                url = cherrypy.url("/pms_asset",
+                                   qs={"url": urllib.parse.quote_plus(url[1:] if url.startswith("/") else url)})
             else:
-                url += '?'
-            url += "X-Plex-Token={}".format(self.plex_token)
+                url = self.server_addr + url[1:]
+                if urlparse(url).query:
+                    url += '&'
+                else:
+                    url += '?'
+                url += "X-Plex-Token={}".format(self.plex_token)
             return url
 
         if not url.startswith(self.prefix):
@@ -77,6 +85,7 @@ class Kitana(object):
             "logged_in": bool(cherrypy.session.get("plex_token")),
             "username": cherrypy.session.get("username"),
             "server_name": cherrypy.session.get("server_name"),
+            "connection": cherrypy.session.get("connection"),
         }
 
     @property
@@ -122,13 +131,18 @@ class Kitana(object):
 
     @property
     def server_addr(self):
-        return cherrypy.session.get("server_addr")
+        value = self.connection.get("uri", None)
+        return value + "/" if value else None
 
-    @server_addr.setter
-    def server_addr(self, value):
+    @property
+    def connection(self):
+        return cherrypy.session.get("connection", {})
+
+    @connection.setter
+    def connection(self, value):
         if not self.initialized and not value:
             return
-        cherrypy.session["server_addr"] = value + "/" if value else None
+        cherrypy.session["connection"] = value
 
     @property
     def plex_headers(self):
@@ -179,36 +193,50 @@ class Kitana(object):
         servers = OrderedDict()
         # import pprint
         # pprint.pprint(content)
-        if not server_addr:
-            for device in content["MediaContainer"].get("Device", []):
-                if device["provides"] != "server" or not bool(device["presence"]):
+        use_connection = None
+        for device in content["MediaContainer"].get("Device", []):
+            if device["provides"] != "server" or not bool(device["presence"]):
+                continue
+
+            public_address_matches = device["publicAddressMatches"] == "1"
+            https_required = device["httpsRequired"] == "1"
+
+            for connection in device["Connection"]:
+                connection["unavailable"] = False
+                if not public_address_matches and connection["local"] == "1":
                     continue
 
-                public_address_matches = device["publicAddressMatches"] == "1"
-                https_required = device["httpsRequired"] == "1"
+                elif https_required and connection["protocol"] != "https":
+                    continue
 
-                for connection in device["Connection"]:
-                    if not public_address_matches and connection["local"] == "1":
-                        continue
+                if device["name"] not in servers:
+                    servers[device["name"]] = {"connections": [], "owned": device["owned"] == "1",
+                                               "publicAddress": device["publicAddress"],
+                                               "publicAddressMatches": public_address_matches}
 
-                    elif https_required and connection["protocol"] != "https":
-                        continue
+                if blacklist_addr and connection["uri"] in blacklist_addr:
+                    print("{}: {} on blacklist, skipping".format(device["name"], connection["uri"]))
+                    connection["unavailable"] = True
+                    continue
 
-                    if device["name"] not in servers:
-                        servers[device["name"]] = {"connections": [], "owned": device["owned"] == "1"}
+                servers[device["name"]]["connections"].append(connection)
+                if server_name and server_name == device["name"]:
+                    if server_addr and connection["uri"] == server_addr:
+                        use_connection = connection
 
-                    if blacklist_addr and connection["uri"] in blacklist_addr:
-                        print("{}: {} on blacklist, skipping".format(device["name"], connection["uri"]))
-                        continue
+                    elif server_addr and server_addr == "relay" and connection.get("relay") == "1":
+                        use_connection = connection
 
-                    servers[device["name"]]["connections"].append(connection)
-                    if server_name and server_name == device["name"]:
-                        server_addr = connection["uri"]
+                    elif not server_addr:
+                        use_connection = connection
+
+                    if use_connection:
                         break
 
-        if server_name and server_addr:
+        if server_name and use_connection:
             self.server_name = server_name
-            self.server_addr = server_addr
+            self.connection = use_connection
+            server_addr = use_connection["uri"]
 
             print("Server set to: {}, {}".format(server_name, server_addr))
             print("Verifying {}: {}".format(server_name, server_addr))
@@ -218,10 +246,10 @@ class Kitana(object):
                 if e.response.status_code == 401:
                     self.plex_token = None
                     self.server_name = None
-                    self.server_addr = None
+                    self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
                     raise cherrypy.HTTPRedirect("/token")
-            except Exception as e:
+            except Timeout as e:
                 if not blacklist_addr:
                     blacklist_addr = []
                 blacklist_addr.append(server_addr)
@@ -260,8 +288,15 @@ class Kitana(object):
     def logout(self):
         self.plex_token = None
         self.server_name = None
-        self.server_addr = None
+        self.connection = None
         raise cherrypy.HTTPRedirect("/")
+
+    @cherrypy.expose
+    def pms_asset(self, url):
+        url = urllib.parse.unquote_plus(url)
+        r = self.session.get(self.server_addr + url, headers=self.full_headers)
+        cherrypy.response.headers['Content-Type'] = r.headers.get("Content-Type", "image/jpg")
+        return r.content
 
     @cherrypy.expose
     def default(self, *args, **kwargs):
@@ -281,10 +316,9 @@ class Kitana(object):
                 if e.response.status_code == 401:
                     print("Access denied when accessing {}, going to server selection".format(self.server_name))
                     self.server_name = None
-                    self.server_addr = None
+                    self.connection = None
                     raise cherrypy.HTTPRedirect("/servers")
                 elif e.response.status_code == 404:
-                    print("YEEE")
                     raise cherrypy.HTTPRedirect("/plugins")
 
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
@@ -324,7 +358,14 @@ if __name__ == "__main__":
         },
         '/static': {
             'tools.staticdir.on': True,
-            'tools.staticdir.dir': os.path.join(baseDir, "static")
+            'tools.staticdir.dir': os.path.join(baseDir, "static"),
+        },
+        '/pms_asset': {
+            'tools.caching.on': True,
+            'tools.caching.delay': 3600,
+            'tools.caching.cache_class': BigMemoryCache,
+            'tools.expires.on': True,
+            'tools.expires.secs': 3600,
         }
     }
     kitana = Kitana(prefix=prefix)

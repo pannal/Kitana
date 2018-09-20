@@ -26,7 +26,7 @@
         {% block nav %}
             <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
                 <div class="container">
-                    <a class="navbar-brand" href="{{ url("/") }}">Kitana for Sub-Zero</a>
+                    <a class="navbar-brand" href="{{ url("/") }}">Kitana</a>
                     <button class="navbar-toggler" type="button" data-toggle="collapse"
                             data-target="#navbarSupportedContent"
                             aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
@@ -66,10 +66,14 @@
                             <span class="navbar-text mr-3">
                                 {{ username }}
                             </span>
-                            {% if server_name %}
-                                <a class="btn btn-dark mr-3" href="{{ url("/servers") }}"
-                                   role="button">{{ server_name }} <span class="badge badge-secondary">local</span></a>
-                            {% endif %}
+                            {% if server_name -%}
+                                <a class="btn btn-dark" href="{{ url("/servers") }}"
+                                   role="button">{{ server_name -}}
+                                    {% if connection -%}
+                                        &nbsp;<span class="badge badge-secondary">{% if connection.relay == "1" %}relay{% elif connection.local == "1" %}local{% else %}remote{% endif %}</span>
+                                    {%- endif %}
+                                </a>
+                            {%- endif %}
                             <a class="btn btn-dark" href="{{ url("/logout") }}" role="button"><i
                                     class="oi oi-account-logout"></i>&nbsp; Sign Out</a>
                         {% else %}

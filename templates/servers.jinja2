@@ -3,10 +3,13 @@
     <script>
         $(function () {
             $('#servers li').on("click", function (e) {
-                $el = $(e.target);
-                $('#servers [name="server_name"]').val($el.data("server_name"));
-                $('#servers [name="server_addr"]').val($el.data("server_addr"));
-                $('#servers').submit();
+                let $el = $(e.currentTarget), server_name = $el.data("server_name"),
+                    server_addr = $el.data("server_addr");
+                if (server_name && server_addr) {
+                    $('#server_name').val(server_name);
+                    $('#server_addr').val(server_addr);
+                    $('#servers').submit();
+                }
             });
         });
     </script>
@@ -15,18 +18,22 @@
 
 {% block content %}
     <h2 class="text-center">Select Server</h2>
-    {% for server, data in servers.items() %}
-        <form method="post" id="servers">
-            <input type="hidden" name="server_name" value="" />
-            <input type="hidden" name="server_addr" value="" />
+    <form method="post" id="servers">
+        <input type="hidden" name="server_name" id="server_name"/>
+        <input type="hidden" name="server_addr" id="server_addr"/>
+        {% for server, data in servers.items() %}
             <div class="card text-white bg-dark mb-3" style="width: 50%; margin: 0 auto">
                 <div class="card-header">
                     {{ server }}{% if data.owned %}&nbsp;<span class="badge badge-primary">owned</span>{% endif %}</div>
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         {% for connection in data["connections"] %}
-                            <li class="list-group-item" data-server_name="{{ server }}" data-server_addr="{{ connection.uri }}">
+                            <li class="list-group-item" data-server_name="{{ server }}"
+                                data-server_addr="{% if connection.relay == "1" %}relay{% else %}{{ connection.uri }}{% endif %}">
                                 {{ connection.address }}:{{ connection.port }}&nbsp;
+                                {% if connection.unavailable %}
+                                    <span class="badge badge-warning">unavailable</span>
+                                {% endif %}
                                 {% if connection.local == "1" %}
                                     <span class="badge badge-primary">local</span>
                                 {% else %}
@@ -40,11 +47,14 @@
                                 {% if connection.relay == "1" %}
                                     <span class="badge badge-info">Relay</span>
                                 {% endif %}
+                                {% if connection.address == data.publicAddress and data.publicAddressMatches == "1" %}
+                                    <span class="badge badge-danger">IP/NAT</span>
+                                {% endif %}
                             </li>
                         {% endfor %}
                     </ul>
                 </div>
             </div>
-        </form>
-    {% endfor %}
+        {% endfor %}
+    </form>
 {% endblock %}
