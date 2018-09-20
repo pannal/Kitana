@@ -7,6 +7,7 @@ body
 
 $vertBreaker: 992px
 $belowBig: 1920px
+$maxWidth: 1140px
 
 #content
   display: block
@@ -43,6 +44,7 @@ $bgOpacity: opacity(30%)
 
 
 #content
+  max-width: $maxWidth
   a, a:hover, a:link, a:visited
     color: aqua
     text-decoration: none
@@ -96,12 +98,12 @@ $bgOpacity: opacity(30%)
             display: none
 
         .title
-          font-size: 18px
+          font-size: 1.2em
           flex-shrink: 0
 
         .summary
           color: #fefefe
-          font-size: 16px
+          font-size: 1em
           flex-shrink: 1
 
           @media (max-width: $vertBreaker)

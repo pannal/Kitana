@@ -335,14 +335,16 @@ if __name__ == "__main__":
 
     cherrypy.config.update(
         {
-            'server.socket_host': '192.168.0.2',
-            'server.socket_port': 32401,
+            'server.socket_host': '127.0.0.1',
+            'server.socket_port': 31337,
             'engine.autoreload.on': True,
             "tools.sessions.on": True,
             "tools.sessions.storage_class": cherrypy.lib.sessions.FileSession,
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
+            'tools.proxy.on': True,
+            'tools.proxy.base': 'https://speicherhahn.com',
             #'tools.baseurloverride.baseurl': prefix,
             #'tools.baseurloverride.on': prefix != "/"
         }
