@@ -362,10 +362,11 @@ if __name__ == "__main__":
         },
         '/pms_asset': {
             'tools.caching.on': True,
-            'tools.caching.delay': 3600,
+            'tools.caching.delay': 604800,
             'tools.caching.cache_class': BigMemoryCache,
             'tools.expires.on': True,
-            'tools.expires.secs': 3600,
+            'tools.expires.secs': 604800,
+            'tools.expires.force': True,
         }
     }
     kitana = Kitana(prefix=prefix)
