@@ -1,6 +1,8 @@
 #!/usr/bin/python3
 
 import os
+import platform
+import traceback
 from collections import OrderedDict
 
 import cherrypy
@@ -13,7 +15,7 @@ import uuid
 from jinja2 import Environment, PackageLoader, select_autoescape, contextfunction
 from urllib.parse import urlparse
 
-from requests import HTTPError
+from requests import HTTPError, Timeout
 
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
@@ -28,10 +30,11 @@ template = env.get_template('index.jinja2')
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1"
+    VERSION = "0.0.1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
-    timeout = 20
+    timeout = 5
+    plextv_timeout = 15
 
     def __init__(self, prefix="/"):
         self.initialized = False
@@ -40,6 +43,8 @@ class Kitana(object):
         self.username = None
         self.server_name = None
         self.server_addr = None
+        self.session = requests.Session()
+        self.req_defaults = {"timeout": self.timeout}
         self.initialized = True
 
     def template_url(self, url):
@@ -60,10 +65,10 @@ class Kitana(object):
         headers = {
             "X-Plex-Token": self.plex_token
         }
-        r = requests.get(self.server_addr + path, headers=headers, timeout=self.timeout)
+        r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
         r.raise_for_status()
         content = xmltodict.parse(r.content, attr_prefix="")
-        #print(json.dumps(content["MediaContainer"]))
+        # print(json.dumps(content["MediaContainer"]))
         return template.render(data=content["MediaContainer"], **self.default_context)
 
     @property
@@ -130,7 +135,12 @@ class Kitana(object):
         return {
             "X-Plex-Client-Identifier": self.client_identifier,
             "X-Plex-Product": self.PRODUCT_IDENTIFIER,
-            "X-Plex-Version": 'Plex OAuth',
+            "X-Plex-Provides": "controller",
+            "X-Plex-Version": self.VERSION,
+            "X-Plex-Platform": platform.system(),
+            "X-Plex-Device": "{} {}".format(platform.system(), platform.release()),
+            "X-Plex-Device-Name": platform.node(),
+            "X-Plex-Platform-Version": platform.release(),
             'Accept': 'application/json',
         }
 
@@ -142,7 +152,7 @@ class Kitana(object):
 
     def fill_user_info(self):
         # get user info
-        r = requests.get("https://plex.tv/users/account", headers=self.full_headers)
+        r = self.session.get("https://plex.tv/users/account", headers=self.full_headers, timeout=self.plextv_timeout)
         r.raise_for_status()
         content = xmltodict.parse(r.content, attr_prefix="")
         self.username = content["user"]["username"][0]
@@ -157,11 +167,13 @@ class Kitana(object):
                 qs["server_name"] = self.server_name
             if self.server_addr:
                 qs["server_addr"] = self.server_addr
+
             raise cherrypy.HTTPRedirect(
                 cherrypy.url("/servers", qs=qs))
 
-    def connect_pms(self, server_name=None, server_addr=None):
-        r = requests.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers)
+    def connect_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
+        r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
+                             timeout=self.plextv_timeout)
         r.raise_for_status()
         content = xmltodict.parse(r.content, attr_prefix="")
         servers = OrderedDict()
@@ -185,6 +197,10 @@ class Kitana(object):
                     if device["name"] not in servers:
                         servers[device["name"]] = {"connections": [], "owned": device["owned"] == "1"}
 
+                    if blacklist_addr and connection["uri"] in blacklist_addr:
+                        print("{}: {} on blacklist, skipping".format(device["name"], connection["uri"]))
+                        continue
+
                     servers[device["name"]]["connections"].append(connection)
                     if server_name and server_name == device["name"]:
                         server_addr = connection["uri"]
@@ -195,6 +211,22 @@ class Kitana(object):
             self.server_addr = server_addr
 
             print("Server set to: {}, {}".format(server_name, server_addr))
+            print("Verifying {}: {}".format(server_name, server_addr))
+            try:
+                self.session.get(self.server_addr + "servers", headers=self.full_headers, **self.req_defaults)
+            except HTTPError as e:
+                if e.response.status_code == 401:
+                    self.plex_token = None
+                    self.server_name = None
+                    self.server_addr = None
+                    print("Access denied when accessing {}, going to login".format(self.server_name))
+                    raise cherrypy.HTTPRedirect("/token")
+            except Exception as e:
+                if not blacklist_addr:
+                    blacklist_addr = []
+                blacklist_addr.append(server_addr)
+                print("{}: Blacklisting {} due to: {!r}".format(server_name, server_addr, e))
+                return self.connect_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
 
             raise cherrypy.HTTPRedirect("/")
 
@@ -209,10 +241,10 @@ class Kitana(object):
     @cherrypy.expose("token")
     def get_plex_token(self, username=None, password=None, token=None):
         if username and password:
-            r = requests.post("https://plex.tv/users/sign_in.json", {
+            r = self.session.post("https://plex.tv/users/sign_in.json", {
                 "user[login]": username,
                 "user[password]": password,
-            }, headers=self.plex_headers)
+            }, headers=self.plex_headers, **self.req_defaults)
             r.raise_for_status()
             self.plex_token = r.json()["user"]["authToken"]
             raise cherrypy.HTTPRedirect("/")
@@ -237,21 +269,26 @@ class Kitana(object):
 
         query_params = "&".join("=".join([k, v]) for k, v in kwargs.items())
         path = "/".join(args) + ("?" + query_params if query_params else "")
-        #print(args, path)
+        # print(args, path)
         kw = {}
         if path:
             kw["path"] = path
 
         try:
             return self.plex_dispatch(**kw)
-        except HTTPError as e:
-            if e.response.status_code == 401:
-                print("Access denied, new login")
-                self.plex_token = None
-                self.server_name = None
-                self.server_addr = None
-                raise cherrypy.HTTPRedirect("/token")
-            print("Trying other connection to: {}".format(self.server_name))
+        except (HTTPError, Timeout) as e:
+            if isinstance(e, HTTPError):
+                if e.response.status_code == 401:
+                    print("Access denied when accessing {}, going to server selection".format(self.server_name))
+                    self.server_name = None
+                    self.server_addr = None
+                    raise cherrypy.HTTPRedirect("/servers")
+                elif e.response.status_code == 404:
+                    print("YEEE")
+                    raise cherrypy.HTTPRedirect("/plugins")
+
+            print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
+                                                                                         self.server_name))
             return self.connect_pms(self.server_name)
 
 

@@ -66,10 +66,15 @@
                             <span class="navbar-text mr-3">
                                 {{ username }}
                             </span>
-                            <a class="btn btn-outline-light btn-sm mr-3" href="{{ url("/servers") }}" role="button"><i class="oi oi-transfer"></i>&nbsp;{{ server_name }}</a>
-                            <a class="btn btn-dark" href="{{ url("/logout") }}" role="button"><i class="oi oi-account-logout"></i>&nbsp; Sign Out</a>
+                            {% if server_name %}
+                                <a class="btn btn-dark mr-3" href="{{ url("/servers") }}"
+                                   role="button">{{ server_name }} <span class="badge badge-secondary">local</span></a>
+                            {% endif %}
+                            <a class="btn btn-dark" href="{{ url("/logout") }}" role="button"><i
+                                    class="oi oi-account-logout"></i>&nbsp; Sign Out</a>
                         {% else %}
-                            <a class="btn btn-primary" href="{{ url("/token") }}" role="button"><i class="oi oi-account-login"></i>&nbsp; Sign In</a>
+                            <a class="btn btn-primary" href="{{ url("/token") }}" role="button"><i
+                                    class="oi oi-account-login"></i>&nbsp; Sign In</a>
                         {% endif %}
                     </div>
                 </div>
