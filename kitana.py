@@ -100,7 +100,7 @@ class Kitana(object):
         token = cherrypy.session.get("plex_token")
         if not token:
             print("No token, redirecting")
-            raise cherrypy.HTTPRedirect("/token")
+            raise cherrypy.HTTPRedirect("{}/token".format(self.prefix))
         return token
 
     @plex_token.setter
@@ -131,6 +131,8 @@ class Kitana(object):
 
     @property
     def server_addr(self):
+        if not self.connection:
+            return
         value = self.connection.get("uri", None)
         return value + "/" if value else None
 
@@ -248,7 +250,7 @@ class Kitana(object):
                     self.server_name = None
                     self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
-                    raise cherrypy.HTTPRedirect("/token")
+                    raise cherrypy.HTTPRedirect("{}/token".format(self.prefix))
             except Timeout as e:
                 if not blacklist_addr:
                     blacklist_addr = []
@@ -256,7 +258,7 @@ class Kitana(object):
                 print("{}: Blacklisting {} due to: {!r}".format(server_name, server_addr, e))
                 return self.connect_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
 
-            raise cherrypy.HTTPRedirect("/")
+            raise cherrypy.HTTPRedirect(self.prefix)
 
         return servers
 
@@ -275,7 +277,7 @@ class Kitana(object):
             }, headers=self.plex_headers, **self.req_defaults)
             r.raise_for_status()
             self.plex_token = r.json()["user"]["authToken"]
-            raise cherrypy.HTTPRedirect("/")
+            raise cherrypy.HTTPRedirect(self.prefix)
 
         if token:
             self.plex_token = token
@@ -289,7 +291,7 @@ class Kitana(object):
         self.plex_token = None
         self.server_name = None
         self.connection = None
-        raise cherrypy.HTTPRedirect("/")
+        raise cherrypy.HTTPRedirect(self.prefix)
 
     @cherrypy.expose
     def pms_asset(self, url):
@@ -317,9 +319,9 @@ class Kitana(object):
                     print("Access denied when accessing {}, going to server selection".format(self.server_name))
                     self.server_name = None
                     self.connection = None
-                    raise cherrypy.HTTPRedirect("/servers")
+                    raise cherrypy.HTTPRedirect("{}/servers".format(self.prefix))
                 elif e.response.status_code == 404:
-                    raise cherrypy.HTTPRedirect("/plugins")
+                    raise cherrypy.HTTPRedirect("{}/plugins".format(self.prefix))
 
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
@@ -329,7 +331,7 @@ class Kitana(object):
 if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
 
-    prefix = "/"
+    prefix = "/kitana"
 
     cherrypy.config.update(
         {
@@ -341,8 +343,8 @@ if __name__ == "__main__":
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
-            'tools.baseurloverride.baseurl': prefix,
-            'tools.baseurloverride.on': prefix != "/"
+            #'tools.baseurloverride.baseurl': prefix,
+            #'tools.baseurloverride.on': prefix != "/"
         }
     )
 
