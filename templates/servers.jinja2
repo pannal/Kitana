@@ -47,7 +47,7 @@
                                 {% if connection.relay == "1" %}
                                     <span class="badge badge-info">Relay</span>
                                 {% endif %}
-                                {% if connection.address == data.publicAddress and data.publicAddressMatches == "1" %}
+                                {% if connection.address == data.publicAddress and data.publicAddressMatches %}
                                     <span class="badge badge-danger">IP/NAT</span>
                                 {% endif %}
                             </li>

@@ -191,7 +191,7 @@ class Kitana(object):
             raise cherrypy.HTTPRedirect(
                 cherrypy.url("/servers", qs=qs))
 
-    def connect_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
+    def discover_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
         r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
                              timeout=self.plextv_timeout)
         r.raise_for_status()
@@ -260,15 +260,16 @@ class Kitana(object):
                     blacklist_addr = []
                 blacklist_addr.append(server_addr)
                 print("{}: Blacklisting {} due to: {!r}".format(server_name, server_addr, e))
-                return self.connect_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
+                return self.discover_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
 
+            print("Verified {}: {}".format(server_name, server_addr))
             raise cherrypy.HTTPRedirect(self.prefix)
 
         return servers
 
     @cherrypy.expose
     def servers(self, server_name=None, server_addr=None):
-        servers = self.connect_pms(server_name=server_name, server_addr=server_addr)
+        servers = self.discover_pms(server_name=server_name, server_addr=server_addr)
         template = env.get_template('servers.jinja2')
         return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context, servers=servers)
 
@@ -329,7 +330,7 @@ class Kitana(object):
 
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
-            return self.connect_pms(self.server_name)
+            return self.discover_pms(self.server_name)
 
 
 parser = argparse.ArgumentParser()
@@ -373,8 +374,8 @@ if __name__ == "__main__":
             "tools.sessions.name": "kitana_session_id",
             'tools.proxy.on': bool(proxy_base),
             'tools.proxy.base': proxy_base,
-            # 'tools.baseurloverride.baseurl': prefix,
-            # 'tools.baseurloverride.on': prefix != "/"
+            #'tools.baseurloverride.baseurl': prefix,
+            #'tools.baseurloverride.on': prefix != "/"
         }
     )
 
