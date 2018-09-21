@@ -12,11 +12,13 @@ import glob
 import json
 import uuid
 import urllib
+import argparse
 
-from jinja2 import Environment, PackageLoader, select_autoescape, contextfunction
+from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from cherrypy.lib.static import serve_file
 from requests import HTTPError, Timeout
+from distutils.util import strtobool
 
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
@@ -39,7 +41,7 @@ class Kitana(object):
     plextv_timeout = 15
     proxy_assets = True
 
-    def __init__(self, prefix="/"):
+    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True):
         self.initialized = False
         self.prefix = prefix
         self.plex_token = None
@@ -47,8 +49,10 @@ class Kitana(object):
         self.server_name = None
         self.connection = None
         self.session = requests.Session()
+        self.timeout = timeout
+        self.plextv_timeout = plextv_timeout
         self.req_defaults = {"timeout": self.timeout}
-        self.proxy_assets = True
+        self.proxy_assets = proxy_assets
         self.initialized = True
 
     def template_url(self, url):
@@ -328,25 +332,49 @@ class Kitana(object):
             return self.connect_pms(self.server_name)
 
 
+parser = argparse.ArgumentParser()
+
 if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
 
-    prefix = "/kitana"
+    parser.register('type', bool, strtobool)
+    parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337", help="Listen on address:port (default: 0.0.0.0:31337)",
+                        metavar="HOST:PORT")
+    parser.add_argument('-p', '--prefix', type=str, default="/", help="Prefix to handle; used for reverse proxies "
+                                                                      "normally (default: /)")
+    parser.add_argument('-a', '--autoreload', type=bool, default=True,
+                        help="Watch project files for changes and auto-reload? (default: True)")
+    parser.add_argument('-P', '--proxy-base', type=str, default="", help="When behind a reverse proxy, assume "
+                                                                         "this base URI instead of the bound address "
+                                                                         "(e.g.: http://host.com). "
+                                                                         "Do *not* include the :prefix: here. (default: \"\")")
+    parser.add_argument('--proxy-assets', type=bool, default=True,
+                        help="Pass PMS assets through the app to avoid exposing the plex token? (default: True)")
+    parser.add_argument('-t', '--timeout', type=int, default=5,
+                        help="Connection timeout to the PMS (default: 5)")
+    parser.add_argument('-pt', '--plextv-timeout', type=int, default=15,
+                        help="Connection timeout to the Plex.TV API (default: 15)")
+
+    args = parser.parse_args()
+    host, port = args.bind.rsplit(":", 1) if ":" in args.bind else (args.bind, 31337)
+    proxy_base = args.proxy_base
+
+    prefix = args.prefix
 
     cherrypy.config.update(
         {
-            'server.socket_host': '127.0.0.1',
-            'server.socket_port': 31337,
-            'engine.autoreload.on': True,
+            'server.socket_host': host,
+            'server.socket_port': int(port),
+            'engine.autoreload.on': args.autoreload,
             "tools.sessions.on": True,
             "tools.sessions.storage_class": cherrypy.lib.sessions.FileSession,
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
-            'tools.proxy.on': True,
-            'tools.proxy.base': 'https://speicherhahn.com',
-            #'tools.baseurloverride.baseurl': prefix,
-            #'tools.baseurloverride.on': prefix != "/"
+            'tools.proxy.on': bool(proxy_base),
+            'tools.proxy.base': proxy_base,
+            # 'tools.baseurloverride.baseurl': prefix,
+            # 'tools.baseurloverride.on': prefix != "/"
         }
     )
 
@@ -373,7 +401,8 @@ if __name__ == "__main__":
             'tools.expires.force': True,
         }
     }
-    kitana = Kitana(prefix=prefix)
+    kitana = Kitana(prefix=prefix, proxy_assets=args.proxy_assets, timeout=args.timeout,
+                    plextv_timeout=args.plextv_timeout)
     env.globals['url'] = kitana.template_url
 
     cherrypy.engine.start()
