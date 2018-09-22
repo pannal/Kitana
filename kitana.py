@@ -339,17 +339,27 @@ if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
 
     parser.register('type', bool, strtobool)
-    parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337", help="Listen on address:port (default: 0.0.0.0:31337)",
+    parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337",
+                        help="Listen on address:port (default: 0.0.0.0:31337)",
                         metavar="HOST:PORT")
+    parser.add_argument('-a', '--autoreload', type=bool, default=False,
+                        help="Watch project files for changes and auto-reload? (default: False)")
     parser.add_argument('-p', '--prefix', type=str, default="/", help="Prefix to handle; used for reverse proxies "
-                                                                      "normally (default: /)")
-    parser.add_argument('-a', '--autoreload', type=bool, default=True,
-                        help="Watch project files for changes and auto-reload? (default: True)")
-    parser.add_argument('-P', '--proxy-base', type=str, default="", help="When behind a reverse proxy, assume "
-                                                                         "this base URI instead of the bound address "
-                                                                         "(e.g.: http://host.com). "
-                                                                         "Do *not* include the :prefix: here. (default: \"\")")
-    parser.add_argument('--proxy-assets', type=bool, default=True,
+                                                                      "normally (default: \"/\")")
+    parser.add_argument('-P', '--behind-proxy', type=bool, nargs='?', default=False, const=True,
+                        help="Assume being ran behind a reverse proxy (default: False)")
+
+    group = parser.add_mutually_exclusive_group()
+    group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host",
+                       help="When behind reverse proxy, get host from this var "
+                            "(NGINX: \"Host\", Squid: \"Origin\", Lighty/Apache: \"X-Forwarded-Host\") "
+                            "(default: \"Host\")")
+    group.add_argument('-PB', '--proxy-base', type=str, default=None,
+                       help="When behind a reverse proxy, assume "
+                            "this base URI instead of the bound address "
+                            "(e.g.: http://host.com; no slash at the end). "
+                            "Do *not* include the :prefix: here. (default: \"Host (NGINX)\")")
+    parser.add_argument('--shadow-assets', type=bool, default=True,
                         help="Pass PMS assets through the app to avoid exposing the plex token? (default: True)")
     parser.add_argument('-t', '--timeout', type=int, default=5,
                         help="Connection timeout to the PMS (default: 5)")
@@ -357,8 +367,15 @@ if __name__ == "__main__":
                         help="Connection timeout to the Plex.TV API (default: 15)")
 
     args = parser.parse_args()
+    if (args.proxy_base and args.proxy_host_var) and not args.behind_proxy:
+        parser.error("--proxy-base and --proxy-host-var can't be specified together")
+
+    if (args.proxy_base or args.proxy_host_var) and not args.behind_proxy:
+        print("Assuming --behind-proxy, because {} is specified".format(
+            "--proxy-base" if args.proxy_base else "--proxy-host-var"))
+        args.behind_proxy = True
+
     host, port = args.bind.rsplit(":", 1) if ":" in args.bind else (args.bind, 31337)
-    proxy_base = args.proxy_base
 
     prefix = args.prefix
 
@@ -372,10 +389,11 @@ if __name__ == "__main__":
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
-            'tools.proxy.on': bool(proxy_base),
-            'tools.proxy.base': proxy_base,
-            #'tools.baseurloverride.baseurl': prefix,
-            #'tools.baseurloverride.on': prefix != "/"
+            'tools.proxy.on': args.behind_proxy,
+            'tools.proxy.local': args.proxy_host_var or "Host",
+            'tools.proxy.base': args.proxy_base,
+            # 'tools.baseurloverride.baseurl': prefix,
+            # 'tools.baseurloverride.on': prefix != "/"
         }
     )
 
@@ -402,7 +420,7 @@ if __name__ == "__main__":
             'tools.expires.force': True,
         }
     }
-    kitana = Kitana(prefix=prefix, proxy_assets=args.proxy_assets, timeout=args.timeout,
+    kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout)
     env.globals['url'] = kitana.template_url
 
