@@ -367,10 +367,10 @@ if __name__ == "__main__":
                         help="Connection timeout to the Plex.TV API (default: 15)")
 
     args = parser.parse_args()
-    if (args.proxy_base and args.proxy_host_var) and not args.behind_proxy:
+    if args.proxy_base and args.proxy_host_var:
         parser.error("--proxy-base and --proxy-host-var can't be specified together")
 
-    if (args.proxy_base or args.proxy_host_var) and not args.behind_proxy:
+    elif (args.proxy_base or args.proxy_host_var) and not args.behind_proxy:
         print("Assuming --behind-proxy, because {} is specified".format(
             "--proxy-base" if args.proxy_base else "--proxy-host-var"))
         args.behind_proxy = True
