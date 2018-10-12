@@ -16,5 +16,7 @@ EXPOSE 31337
 # Define environment variable
 #ENV NAME World
 
+VOLUME /app/data
+
 # Run app.py when the container launches
 ENTRYPOINT ["python", "kitana.py"]
