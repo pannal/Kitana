@@ -466,7 +466,7 @@ class Kitana(object):
             return self.discover_pms(self.server_name)
 
 
-def update_check(kitana):
+def _update_check(kitana):
     g = Github()
     repo = g.get_repo("pannal/Kitana")
     try:
@@ -476,6 +476,14 @@ def update_check(kitana):
 
     if StrictVersion(kitana.VERSION) < StrictVersion(release.tag_name):
         kitana.has_update = release.tag_name
+
+
+def update_check(kitana):
+    try:
+        _update_check(kitana)
+    except:
+        print("Update check failed")
+        traceback.print_exc()
 
 
 parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
