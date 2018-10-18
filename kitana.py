@@ -2,6 +2,7 @@
 
 import os
 import platform
+import textwrap
 import traceback
 from collections import OrderedDict
 
@@ -23,6 +24,7 @@ from distutils.util import strtobool
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
 from tools.cache import BigMemoryCache
+from util.argparse import MultilineFormatter
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -34,54 +36,76 @@ template = env.get_template('index.jinja2')
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.0.1"
+    VERSION = "0.0.2"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
     plextv_timeout = 15
     proxy_assets = True
+    default_plugin_identifier = None
 
-    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True):
+    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None):
         self.initialized = False
         self.prefix = prefix
         self.plex_token = None
         self.username = None
         self.server_name = None
         self.connection = None
+        self.plugin = None
+        self.plugins = None
         self.session = requests.Session()
         self.timeout = timeout
         self.plextv_timeout = plextv_timeout
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
+        self.default_plugin_identifier = plugin_identifier
         self.initialized = True
 
-    def template_url(self, url):
+    def template_url(self, url, **kw):
+        has_query = bool(urlparse(url).query)
         if url.startswith("/:") or url.startswith("/library"):
             if self.proxy_assets:
                 url = cherrypy.url("/pms_asset",
                                    qs={"url": urllib.parse.quote_plus(url[1:] if url.startswith("/") else url)})
             else:
                 url = self.server_addr + url[1:]
-                if urlparse(url).query:
+                if has_query:
                     url += '&'
                 else:
                     url += '?'
                 url += "X-Plex-Token={}".format(self.plex_token)
             return url
 
-        if not url.startswith(self.prefix):
-            return self.prefix + url
+        if not url.startswith("http") and not url.startswith(self.prefix):
+            url = self.prefix + url
+
+        if kw:
+            url += ("?" if not has_query else "&") + "&".join("=".join([str(k), str(v)]) for k, v in kw.items())
+
         return url
 
-    def plex_dispatch(self, path="video/subzero"):
+    def plex_dispatch(self, path):
         headers = {
             "X-Plex-Token": self.plex_token
         }
         r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
         r.raise_for_status()
         content = xmltodict.parse(r.content, attr_prefix="")
-        # print(json.dumps(content["MediaContainer"]))
-        return template.render(data=content["MediaContainer"], **self.default_context)
+        return content["MediaContainer"]
+
+    def render_plugin(self, path):
+        content = self.plex_dispatch(path)
+        try:
+            has_content = int(content["size"]) > 0
+        except ValueError:
+            has_content = False
+
+        if not has_content:
+            print("No plugin data returned, returning to plugin selection")
+            self.plugin = None
+            raise cherrypy.HTTPRedirect(self.prefix)
+
+        return template.render(data=content, **self.default_context)
 
     @property
     def default_context(self):
@@ -90,6 +114,8 @@ class Kitana(object):
             "username": cherrypy.session.get("username"),
             "server_name": cherrypy.session.get("server_name"),
             "connection": cherrypy.session.get("connection"),
+            "plugins": cherrypy.session.get("plugins"),
+            "plugin": cherrypy.session.get("plugin"),
         }
 
     @property
@@ -151,6 +177,26 @@ class Kitana(object):
         cherrypy.session["connection"] = value
 
     @property
+    def plugin(self):
+        return cherrypy.session.get("plugin", {})
+
+    @plugin.setter
+    def plugin(self, value):
+        if not self.initialized and not value:
+            return
+        cherrypy.session["plugin"] = value
+
+    @property
+    def plugins(self):
+        return cherrypy.session.get("plugins", {})
+
+    @plugins.setter
+    def plugins(self, value):
+        if not self.initialized and not value:
+            return
+        cherrypy.session["plugins"] = value
+
+    @property
     def plex_headers(self):
         return {
             "X-Plex-Client-Identifier": self.client_identifier,
@@ -190,6 +236,10 @@ class Kitana(object):
 
             raise cherrypy.HTTPRedirect(
                 cherrypy.url("/servers", qs=qs))
+
+        if not self.plugin or not self.plugins:
+            raise cherrypy.HTTPRedirect(cherrypy.url("/choose_plugin",
+                                                     qs={"default_identifier": self.default_plugin_identifier}))
 
     def discover_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
         r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
@@ -263,15 +313,43 @@ class Kitana(object):
                 return self.discover_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
 
             print("Verified {}: {}".format(server_name, server_addr))
+            self.plugin = None
             raise cherrypy.HTTPRedirect(self.prefix)
 
         return servers
+
+    @property
+    def server_plugins(self):
+        return self.plex_dispatch("channels/all")
 
     @cherrypy.expose
     def servers(self, server_name=None, server_addr=None):
         servers = self.discover_pms(server_name=server_name, server_addr=server_addr)
         template = env.get_template('servers.jinja2')
         return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context, servers=servers)
+
+    @cherrypy.expose
+    def choose_plugin(self, key=None, identifier=None, default_identifier=None):
+        plugins = []
+        try:
+            plugins = self.plugins = self.server_plugins.get("Directory", [])
+        except HTTPError as e:
+            if e.response.status_code == 401:
+                print("Access denied when accessing {}, going to server selection".format(self.server_name))
+                raise cherrypy.HTTPRedirect("{}/servers".format(self.prefix))
+
+        if (key and identifier) or default_identifier:
+            ident = identifier or default_identifier
+            for plugin in plugins:
+                if plugin["identifier"] == ident:
+                    self.plugin = plugin
+
+                    print("Plugin chosen: {}".format(plugin["title"]))
+                    raise cherrypy.HTTPRedirect(self.prefix)
+
+        template = env.get_template('plugins.jinja2')
+
+        return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context)
 
     @cherrypy.expose("token")
     def get_plex_token(self, username=None, password=None, token=None):
@@ -312,12 +390,11 @@ class Kitana(object):
         query_params = "&".join("=".join([k, v]) for k, v in kwargs.items())
         path = "/".join(args) + ("?" + query_params if query_params else "")
         # print(args, path)
-        kw = {}
-        if path:
-            kw["path"] = path
+        if not path:
+            path = self.plugin["key"][1:]
 
         try:
-            return self.plex_dispatch(**kw)
+            return self.render_plugin(path)
         except (HTTPError, Timeout) as e:
             if isinstance(e, HTTPError):
                 if e.response.status_code == 401:
@@ -333,24 +410,32 @@ class Kitana(object):
             return self.discover_pms(self.server_name)
 
 
-parser = argparse.ArgumentParser()
+parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
 
 if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
 
     parser.register('type', bool, strtobool)
+    parser.epilog = "BOOL can be:\n" \
+                    "True: \"y, yes, t, true, on, 1\"\n" \
+                    "False: \"n, no, f, false, off, 0\".\n\n" \
+                    "[BOOL] indicates that when no value is given, True is used."
+
     parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337",
                         help="Listen on address:port (default: 0.0.0.0:31337)",
                         metavar="HOST:PORT")
-    parser.add_argument('-a', '--autoreload', type=bool, default=False,
+    parser.add_argument('-a', '--autoreload', type=bool, default=False, metavar="BOOL", nargs="?", const=True,
                         help="Watch project files for changes and auto-reload? (default: False)")
+    parser.add_argument('-i', '--plugin-identifier', type=str, default="com.plexapp.agents.subzero",
+                        metavar="PLUGIN_IDENTIFIER",
+                        help="The default plugin/channel to view on a server (default: com.plexapp.agents.subzero)")
     parser.add_argument('-p', '--prefix', type=str, default="/", help="Prefix to handle; used for reverse proxies "
                                                                       "normally (default: \"/\")")
-    parser.add_argument('-P', '--behind-proxy', type=bool, nargs='?', default=False, const=True,
+    parser.add_argument('-P', '--behind-proxy', type=bool, default=False, nargs="?", const=True, metavar="BOOL",
                         help="Assume being ran behind a reverse proxy (default: False)")
 
     group = parser.add_mutually_exclusive_group()
-    group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host",
+    group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host", metavar="PROXY_HOST_VAR",
                        help="When behind reverse proxy, get host from this var "
                             "(NGINX: \"Host\", Squid: \"Origin\", Lighty/Apache: \"X-Forwarded-Host\") "
                             "(default: \"Host\")")
@@ -359,7 +444,7 @@ if __name__ == "__main__":
                             "this base URI instead of the bound address "
                             "(e.g.: http://host.com; no slash at the end). "
                             "Do *not* include the :prefix: here. (default: \"Host (NGINX)\")")
-    parser.add_argument('--shadow-assets', type=bool, default=True,
+    parser.add_argument('--shadow-assets', type=bool, default=True, metavar="BOOL", nargs="?", const=True,
                         help="Pass PMS assets through the app to avoid exposing the plex token? (default: True)")
     parser.add_argument('-t', '--timeout', type=int, default=5,
                         help="Connection timeout to the PMS (default: 5)")
@@ -421,7 +506,7 @@ if __name__ == "__main__":
         }
     }
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
-                    plextv_timeout=args.plextv_timeout)
+                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
     env.globals['url'] = kitana.template_url
 
     cherrypy.engine.start()

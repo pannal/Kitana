@@ -1,0 +1,35 @@
+{% extends "base.jinja2" %}
+{% block head %}
+    <script>
+        $(function () {
+            $('#plugins .plugin').on("click", function (e) {
+                let $el = $(e.currentTarget), key = $el.data("key"),
+                    identifier = $el.data("identifier");
+                if (key && identifier) {
+                    $('#key').val(key);
+                    $('#identifier').val(identifier);
+                    $('#plugins').submit();
+                }
+            });
+        });
+    </script>
+{% endblock %}
+
+{% block content %}
+    <h2 class="text-center">Select Plugin</h2>
+    <form method="post" id="plugins">
+        <input type="hidden" name="identifier" id="identifier"/>
+        <input type="hidden" name="key" id="key"/>
+        {% for plugin in plugins %}
+            <div class="card text-white bg-dark mb-3 plugin" style="width: 50%; margin: 0 auto"
+                 data-key="{{ plugin.key }}" data-identifier="{{ plugin.identifier }}">
+                <div class="card-body">
+                    <img src="{{ url(plugin.thumb) }}" class="rounded mr-3 float-left"/>
+                    {{ plugin.title }} ({{ plugin.identifier }})
+                </div>
+            </div>
+        {% else %}
+            No viable plugins found; please choose a different server
+        {% endfor %}
+    </form>
+{% endblock %}
