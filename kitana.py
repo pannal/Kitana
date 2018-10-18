@@ -116,6 +116,8 @@ class Kitana(object):
             "connection": cherrypy.session.get("connection"),
             "plugins": cherrypy.session.get("plugins"),
             "plugin": cherrypy.session.get("plugin"),
+            "product_identifier": self.PRODUCT_IDENTIFIER,
+            "version": self.VERSION,
         }
 
     @property

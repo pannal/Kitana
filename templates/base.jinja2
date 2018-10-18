@@ -94,7 +94,10 @@
             </nav>
         {% endblock %}
     </div>
-    <div id="content" class="container-fluid">{% block content %}{% endblock %}</div>
+    <div id="content" class="container-fluid">
+        {% block content %}{% endblock %}
+        <p class="text-center">{{ product_identifier }} v{{ version }}</p>
+    </div>
 {% endblock %}
 </body>
 </html>

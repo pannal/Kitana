@@ -22,7 +22,7 @@
         <input type="hidden" name="server_name" id="server_name"/>
         <input type="hidden" name="server_addr" id="server_addr"/>
         {% for server, data in servers.items() %}
-            <div class="card text-white bg-dark mb-3" style="width: 50%; margin: 0 auto">
+            <div class="card text-white bg-dark mb-3">
                 <div class="card-header">
                     {{ server }}{% if data.owned %}&nbsp;<span class="badge badge-primary">owned</span>{% endif %}</div>
                 <div class="card-body">
