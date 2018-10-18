@@ -15,11 +15,14 @@ import uuid
 import urllib
 import argparse
 
+from distutils.version import StrictVersion
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from cherrypy.lib.static import serve_file
+from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
 from distutils.util import strtobool
+from github import Github, GithubException
 
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
@@ -35,6 +38,23 @@ env = Environment(
 template = env.get_template('index.jinja2')
 
 
+@cherrypy.tools.register('before_handler')
+def maintenance():
+    if kitana.has_update:
+        message("Version {} is available. Please update{}".format(kitana.has_update,
+                                                                  " your docker container"
+                                                                  if kitana.running_as == "docker" else ""),
+                persistent=True, data={"version": kitana.VERSION, "new_version": kitana.has_update})
+        kitana.has_update = False
+
+    if not kitana.maintenance_ran:
+        try:
+            kitana.run_maintenance()
+        except:
+            pass
+        kitana.maintenance_ran = True
+
+
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
     VERSION = "0.0.2"
@@ -44,6 +64,9 @@ class Kitana(object):
     plextv_timeout = 15
     proxy_assets = True
     default_plugin_identifier = None
+    running_as = "standalone"
+    maintenance_ran = False
+    has_update = False
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None):
         self.initialized = False
@@ -54,6 +77,7 @@ class Kitana(object):
         self.connection = None
         self.plugin = None
         self.plugins = None
+        self.messages = None
         self.session = requests.Session()
         self.timeout = timeout
         self.plextv_timeout = plextv_timeout
@@ -120,7 +144,18 @@ class Kitana(object):
             "plugin": cherrypy.session.get("plugin"),
             "product_identifier": self.PRODUCT_IDENTIFIER,
             "version": self.VERSION,
+            "running_as": self.running_as,
         }
+
+    @property
+    def messages(self):
+        return cherrypy.session.get("messages", [])
+
+    @messages.setter
+    def messages(self, value):
+        if not self.initialized and not value:
+            return
+        cherrypy.session["messages"] = value
 
     @property
     def client_identifier(self):
@@ -328,12 +363,14 @@ class Kitana(object):
         return self.plex_dispatch("channels/all")
 
     @cherrypy.expose
+    @cherrypy.tools.maintenance()
     def servers(self, server_name=None, server_addr=None):
         servers = self.discover_pms(server_name=server_name, server_addr=server_addr)
         template = env.get_template('servers.jinja2')
         return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context, servers=servers)
 
     @cherrypy.expose
+    @cherrypy.tools.maintenance()
     def choose_plugin(self, key=None, identifier=None, default_identifier=None):
         plugins = []
         try:
@@ -358,6 +395,7 @@ class Kitana(object):
         return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context)
 
     @cherrypy.expose("token")
+    @cherrypy.tools.maintenance()
     def get_plex_token(self, username=None, password=None, token=None):
         if username and password:
             r = self.session.post("https://plex.tv/users/sign_in.json", {
@@ -389,7 +427,18 @@ class Kitana(object):
         cherrypy.response.headers['Content-Type'] = r.headers.get("Content-Type", "image/jpg")
         return r.content
 
+    def run_maintenance(self):
+        # clear obsolete update messages
+        messages = []
+        for msg in self.messages[:]:
+            if msg["persistent"] and msg["data"] and "version" in msg["data"]:
+                if StrictVersion(kitana.VERSION) >= StrictVersion(msg["data"]["new_version"]):
+                    continue
+            messages.append(msg)
+        self.messages = messages
+
     @cherrypy.expose
+    @cherrypy.tools.maintenance()
     def default(self, *args, **kwargs):
         self.ensure_pms_data()
 
@@ -415,6 +464,18 @@ class Kitana(object):
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
             return self.discover_pms(self.server_name)
+
+
+def update_check(kitana):
+    g = Github()
+    repo = g.get_repo("pannal/Kitana")
+    try:
+        release = repo.get_latest_release()
+    except GithubException:
+        return
+
+    if StrictVersion(kitana.VERSION) < StrictVersion(release.tag_name):
+        kitana.has_update = release.tag_name
 
 
 parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
@@ -514,8 +575,18 @@ if __name__ == "__main__":
     }
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
+
+    if os.path.exists("/.dockerenv"):
+        kitana.running_as = "docker"
+    elif os.path.exists(".git"):
+        kitana.running_as = "git"
+
     env.globals['url'] = kitana.template_url
     env.globals["render_messages"] = render_messages
+
+    if kitana.running_as != "git":
+        Monitor(cherrypy.engine, lambda: update_check(kitana), frequency=3600 * 6, name="UpdateCheck").subscribe()
+        update_check(kitana)
 
     cherrypy.engine.start()
     cherrypy.engine.publish('compile_sass')

@@ -4,3 +4,4 @@ xmltodict==0.11.0
 libsass==0.15.0
 future-fstrings==0.4.4
 jinja2
+pyGitHub==1.43.2
