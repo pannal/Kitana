@@ -25,6 +25,7 @@ from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
 from tools.cache import BigMemoryCache
 from util.argparse import MultilineFormatter
+from util.messages import message, render_messages
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -316,6 +317,7 @@ class Kitana(object):
 
             print("Verified {}: {}".format(server_name, server_addr))
             self.plugin = None
+            message("Successfully connected to {}".format(self.server_name), "SUCCESS")
             raise cherrypy.HTTPRedirect(self.prefix)
 
         return servers
@@ -337,7 +339,8 @@ class Kitana(object):
             plugins = self.plugins = self.server_plugins.get("Directory", [])
         except HTTPError as e:
             if e.response.status_code == 401:
-                print("Access denied when accessing {}, going to server selection".format(self.server_name))
+                print("Access denied when accessing plugins on {}, going to server selection".format(self.server_name))
+                message("Access denied for plugins on {}".format(self.server_name), "ERROR")
                 raise cherrypy.HTTPRedirect("{}/servers".format(self.prefix))
 
         if (key and identifier) or default_identifier:
@@ -400,6 +403,7 @@ class Kitana(object):
         except (HTTPError, Timeout) as e:
             if isinstance(e, HTTPError):
                 if e.response.status_code == 401:
+                    message("Access denied on {}".format(self.server_name), "ERROR")
                     print("Access denied when accessing {}, going to server selection".format(self.server_name))
                     self.server_name = None
                     self.connection = None
@@ -510,6 +514,7 @@ if __name__ == "__main__":
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
     env.globals['url'] = kitana.template_url
+    env.globals["render_messages"] = render_messages
 
     cherrypy.engine.start()
     cherrypy.engine.publish('compile_sass')

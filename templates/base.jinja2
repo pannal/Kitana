@@ -41,60 +41,10 @@
 <body>
 {% block body %}
     <div id="nav">
-        {% block nav %}
-            <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
-                <div class="container">
-                    <a class="navbar-brand" href="{{ url("/") }}"><img src="{{ url("/static/img/fan.png") }}" width="28"
-                                                                       height="28" class="d-inline-block align-top"
-                                                                       alt=""> Kitana</a>
-                    <button class="navbar-toggler" type="button" data-toggle="collapse"
-                            data-target="#navbarSupportedContent"
-                            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
-                        <span class="navbar-toggler-icon"></span>
-                    </button>
-
-                    <div class="collapse navbar-collapse" id="navbarSupportedContent">
-                        {% if plugins and plugin %}
-                            <ul class="navbar-nav mr-auto">
-                                <li class="nav-item dropdown">
-                                    <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button"
-                                       data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                                        {{ plugin.title }}
-                                    </a>
-                                    <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                                        {% for p in plugins %}
-                                            <a class="dropdown-item{% if p.identifier == plugin.identifier %} active{% endif %}"
-                                               href="{{ url("/choose_plugin", key=p.key, identifier=p.identifier) }}">{{ p.title }}</a>
-                                        {% endfor %}
-                                    </div>
-                                </li>
-                            </ul>
-                        {% endif %}
-                        {% if logged_in %}
-                            <span class="navbar-text mr-3">
-                                {{ username }}
-                            </span>
-                            {% if server_name -%}
-                                <a class="btn btn-dark" href="{{ url("/servers") }}"
-                                   role="button">{{ server_name -}}
-                                    {% if connection -%}
-                                        &nbsp;<span class="badge badge-secondary">{% if connection.relay == "1" %}
-                                        relay{% elif connection.local == "1" %}local{% else %}remote{% endif %}</span>
-                                    {%- endif %}
-                                </a>
-                            {%- endif %}
-                            <a class="btn btn-dark" href="{{ url("/logout") }}" role="button"><i
-                                    class="oi oi-account-logout"></i>&nbsp; Sign Out</a>
-                        {% else %}
-                            <a class="btn btn-primary" href="{{ url("/token") }}" role="button"><i
-                                    class="oi oi-account-login"></i>&nbsp; Sign In</a>
-                        {% endif %}
-                    </div>
-                </div>
-            </nav>
-        {% endblock %}
+        {% block nav %}{% include "nav.jinja2" with context %}{% endblock %}
     </div>
     <div id="content" class="container-fluid">
+        {% block messages %}{% include "messages.jinja2" with context %}{% endblock %}
         {% block content %}{% endblock %}
         <p class="text-center">{{ product_identifier }} v{{ version }}</p>
     </div>
