@@ -102,6 +102,7 @@ class Kitana(object):
             has_content = False
 
         if not has_content:
+            message("No plugin data returned", "WARNING")
             print("No plugin data returned, returning to plugin selection")
             self.plugin = None
             raise cherrypy.HTTPRedirect(self.prefix)
