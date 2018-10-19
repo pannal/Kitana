@@ -383,6 +383,8 @@ class Kitana(object):
 
     @property
     def server_plugins(self):
+        if not self.server_addr:
+            raise cherrypy.HTTPRedirect(self.prefix)
         return self.plex_dispatch("channels/all")
 
     @cherrypy.expose
