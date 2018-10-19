@@ -2,8 +2,6 @@
 
 import os
 import platform
-import textwrap
-import traceback
 from collections import OrderedDict
 
 import cherrypy
@@ -15,20 +13,19 @@ import uuid
 import urllib
 import argparse
 
-from distutils.version import StrictVersion
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from cherrypy.lib.static import serve_file
 from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
 from distutils.util import strtobool
-from github import Github, GithubException
 
 from plugins.SassCompilerPlugin import SassCompilerPlugin
 from tools.urls import BaseUrlOverride
 from tools.cache import BigMemoryCache
 from util.argparse import MultilineFormatter
 from util.messages import message, render_messages
+from util.update import update_check, StrictVersion
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -57,7 +54,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.0.2"
+    VERSION = "0.1.0b1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -464,26 +461,6 @@ class Kitana(object):
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
             return self.discover_pms(self.server_name)
-
-
-def _update_check(kitana):
-    g = Github()
-    repo = g.get_repo("pannal/Kitana")
-    try:
-        release = repo.get_latest_release()
-    except GithubException:
-        return
-
-    if StrictVersion(kitana.VERSION) < StrictVersion(release.tag_name):
-        kitana.has_update = release.tag_name
-
-
-def update_check(kitana):
-    try:
-        _update_check(kitana)
-    except:
-        print("Update check failed")
-        traceback.print_exc()
 
 
 parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
