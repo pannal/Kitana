@@ -293,9 +293,20 @@ class Kitana(object):
                                                      qs={"default_identifier": self.default_plugin_identifier}))
 
     def discover_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
-        r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
-                             timeout=self.plextv_timeout)
-        r.raise_for_status()
+        try:
+            r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
+                                 timeout=self.plextv_timeout)
+            r.raise_for_status()
+        except (HTTPError, Timeout) as e:
+            if isinstance(e, HTTPError):
+                if e.response.status_code == 401:
+                    self.plex_token = None
+                    self.server_name = None
+                    self.connection = None
+                    print("Access denied when accessing {}, going to login".format(self.server_name))
+                    raise cherrypy.HTTPRedirect("{}/token".format(self.prefix))
+            raise
+
         content = xmltodict.parse(r.content, attr_prefix="")
         servers = OrderedDict()
         # import pprint
