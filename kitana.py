@@ -54,7 +54,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.0b1"
+    VERSION = "0.1.0b3"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -67,7 +67,14 @@ class Kitana(object):
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None):
         self.initialized = False
+        if os.path.exists("/.dockerenv"):
+            self.running_as = "docker"
+        elif os.path.exists(".git"):
+            self.running_as = "git"
+
         self.prefix = prefix
+        self.has_update = False
+        self.maintenance_ran = False
         self.plex_token = None
         self.username = None
         self.server_name = None
@@ -427,11 +434,16 @@ class Kitana(object):
     def run_maintenance(self):
         # clear obsolete update messages
         messages = []
+        seen = []
         for msg in self.messages[:]:
             if msg["persistent"] and msg["data"] and "version" in msg["data"]:
                 if StrictVersion(kitana.VERSION) >= StrictVersion(msg["data"]["new_version"]):
                     continue
-            messages.append(msg)
+
+            if msg["text"] not in seen:
+                messages.append(msg)
+                seen.append(msg["text"])
+
         self.messages = messages
 
     @cherrypy.expose
@@ -527,6 +539,7 @@ if __name__ == "__main__":
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
+            "tools.sessions.locking": 'early',
             'tools.proxy.on': args.behind_proxy,
             'tools.proxy.local': args.proxy_host_var or "Host",
             'tools.proxy.base': args.proxy_base,
@@ -560,11 +573,6 @@ if __name__ == "__main__":
     }
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
-
-    if os.path.exists("/.dockerenv"):
-        kitana.running_as = "docker"
-    elif os.path.exists(".git"):
-        kitana.running_as = "git"
 
     env.globals['url'] = kitana.template_url
     env.globals["render_messages"] = render_messages
