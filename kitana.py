@@ -89,7 +89,7 @@ class Kitana(object):
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
         self.default_plugin_identifier = plugin_identifier
-        self.version_hash = hashlib.sha1(self.VERSION.encode("utf-8")).hexdigest()[:7]
+        self.version_hash = hashlib.md5(self.VERSION.encode("utf-8")).hexdigest()[:7]
         self.initialized = True
 
     def template_url(self, url, **kw):
