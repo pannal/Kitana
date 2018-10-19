@@ -605,8 +605,6 @@ if __name__ == "__main__":
             }
         )
 
-    print(conf)
-
     env.globals['url'] = kitana.template_url
     env.globals['static'] = kitana.static_url
     env.globals["render_messages"] = render_messages
