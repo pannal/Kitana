@@ -1,5 +1,5 @@
 #!/usr/bin/python3
-
+import hashlib
 import os
 import platform
 from collections import OrderedDict
@@ -15,6 +15,7 @@ import argparse
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
+from furl import furl
 from cherrypy.lib.static import serve_file
 from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
@@ -88,6 +89,7 @@ class Kitana(object):
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
         self.default_plugin_identifier = plugin_identifier
+        self.version_hash = hashlib.sha256(self.VERSION.encode("utf-8")).hexdigest()[:7]
         self.initialized = True
 
     def template_url(self, url, **kw):
@@ -112,6 +114,12 @@ class Kitana(object):
             url += ("?" if not has_query else "&") + "&".join("=".join([str(k), str(v)]) for k, v in kw.items())
 
         return url
+
+    def static_url(self, url, **kw):
+        f = furl(url)
+        base, ext = os.path.splitext(str(f.path))
+        f.set(path=".".join([base, self.version_hash]) + ext)
+        return cherrypy.url(f.url)
 
     def plex_dispatch(self, path):
         headers = {
@@ -529,6 +537,9 @@ if __name__ == "__main__":
 
     prefix = args.prefix
 
+    kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
+                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
+
     cherrypy.config.update(
         {
             'server.socket_host': host,
@@ -543,8 +554,7 @@ if __name__ == "__main__":
             'tools.proxy.on': args.behind_proxy,
             'tools.proxy.local': args.proxy_host_var or "Host",
             'tools.proxy.base': args.proxy_base,
-            # 'tools.baseurloverride.baseurl': prefix,
-            # 'tools.baseurloverride.on': prefix != "/"
+            'log.screen': True,
         }
     )
 
@@ -552,13 +562,16 @@ if __name__ == "__main__":
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "templates", "**")))
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "static", "sass", "**")))
     cherrypy.tools.baseurloverride = BaseUrlOverride()
+
     conf = {
-        '/': {
+        "/": {
             "tools.sessions.on": True,
             # 'tools.staticdir.root': os.path.abspath(os.getcwd())
-
         },
         '/static': {
+            'tools.caching.on': True,
+            'tools.expires.on': True,
+            'tools.expires.secs': 604800,
             'tools.staticdir.on': True,
             'tools.staticdir.dir': os.path.join(baseDir, "static"),
         },
@@ -569,12 +582,33 @@ if __name__ == "__main__":
             'tools.expires.on': True,
             'tools.expires.secs': 604800,
             'tools.expires.force': True,
+            'tools.etags.on': True,
+            'tools.etags.autotags': True,
         }
     }
-    kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
-                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
+
+    versioned_asset_base_conf = {
+        'tools.caching.on': True,
+        'tools.expires.on': True,
+        'tools.expires.secs': 604800,
+        'tools.staticfile.on': True,
+    }
+
+    # add handlers for version-hash based assets
+    for versioned_asset in ("css/main.css", "js/auth.js"):
+        base, ext = os.path.splitext(versioned_asset)
+        key = "/static/{}.{}{}".format(base, kitana.version_hash, ext)
+        conf.update(
+            {
+                key: dict(versioned_asset_base_conf,
+                          **{'tools.staticfile.filename': os.path.join(baseDir, "static", versioned_asset)}, )
+            }
+        )
+
+    print(conf)
 
     env.globals['url'] = kitana.template_url
+    env.globals['static'] = kitana.static_url
     env.globals["render_messages"] = render_messages
 
     if kitana.running_as != "git":
