@@ -67,16 +67,31 @@ $bgOpacity: opacity(30%)
       background-color: $dark
       //border: 1px solid #4e4e4e
       margin-bottom: 8px
+      position: relative
+      box-sizing: border-box
+      border-radius: 4px
 
       &:hover
         background-color: $gray-900
+        border-bottom-right-radius: 0
+        border-top-right-radius: 0
+
+        > a
+          div.summary
+            margin:
+              left: -8px
+              right: -8px
+            border-right: 8px solid $gray-900
+            border-radius: 4px
+          .thumb img
+            opacity: 1
 
       > a
         display: flex
         align-content: stretch
         flex-wrap: nowrap
         justify-content: flex-start
-        align-items: flex-start
+        align-items: stretch
         flex-direction: row
 
         @media (max-width: $vertBreaker)
@@ -99,6 +114,7 @@ $bgOpacity: opacity(30%)
             min-width: 10%
             max-width: 100%
             height: auto
+            opacity: 0.8
           @media (max-width: $vertBreaker)
             display: none
 

@@ -8,7 +8,7 @@
                 {% for d in directory %}
                     <li>
                         <a href="{{ d.url if d.url else url(d.key) }}">
-                            <div class="thumb"><img src="{{ url(d.thumb) }}"/></div>
+                            <div class="thumb"><img src="{{ url(d.thumb) }}" class="rounded"/></div>
                             <div class="title">{{ d.title.strip() }}</div>
                             <div class="summary">{{ d.summary }}</div>
                         </a>
