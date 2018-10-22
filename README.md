@@ -59,6 +59,10 @@ Running:
 - `python kitana.py`
 
 
+## Deployment
+I've included [sample configs](https://github.com/pannal/Kitana/tree/master/deployment) for running Kitana using supervisord, and an NGINX reverse-proxy sample config you can use.
+
+
 ## Usage
 #### Command line options (`python kitana.py --help`)
 ```
