@@ -34,11 +34,11 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 - fully cross-platform 
 
 ## Installation
-#### Docker (the easy way)
+### Docker (the easy way)
 
 ##### Standlone
-This launches Kitana on port 31337, locally. To expose the HTTP port, use `-p 0.0.0.0:31337:31337` instead of `-p 127.0.0.1:31337:31337`:
-- ```docker run --name kitana -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
+This launches Kitana on port 31337.:
+- ```docker run --name kitana -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
 ##### Mount on /kitana and behind a reverse proxy (example: NGINX)
 - ```docker run --name kitana -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -p /kitana -P```
@@ -46,8 +46,7 @@ This launches Kitana on port 31337, locally. To expose the HTTP port, use `-p 0.
 ##### Upgrading
 - `docker stop kitana && docker rm kitana && docker pull pannal/kitana:latest`, then re-run it with the command above
 
-
-#### Manual installation
+### Manual installation
 Requirements:
 - Python3.5
 
