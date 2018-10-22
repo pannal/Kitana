@@ -74,7 +74,6 @@ class Kitana(object):
             self.running_as = "git"
 
         self.prefix = prefix
-        self._prefix = prefix if prefix.endswith("/") else prefix+"/"
         self.has_update = False
         self.maintenance_ran = False
         self.plex_token = None
@@ -182,7 +181,7 @@ class Kitana(object):
         token = cherrypy.session.get("plex_token")
         if not token:
             print("No token, redirecting")
-            raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+            raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
         return token
 
     @plex_token.setter
@@ -305,7 +304,7 @@ class Kitana(object):
                     self.server_name = None
                     self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
-                    raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             raise
 
         content = xmltodict.parse(r.content, attr_prefix="")
@@ -367,7 +366,7 @@ class Kitana(object):
                     self.server_name = None
                     self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
-                    raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             except Timeout as e:
                 if not blacklist_addr:
                     blacklist_addr = []
@@ -405,7 +404,7 @@ class Kitana(object):
             if e.response.status_code == 401:
                 print("Access denied when accessing plugins on {}, going to server selection".format(self.server_name))
                 message("Access denied for plugins on {}".format(self.server_name), "ERROR")
-                raise cherrypy.HTTPRedirect("{}servers".format(self._prefix))
+                raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
 
         if (key and identifier) or default_identifier:
             ident = identifier or default_identifier
@@ -488,9 +487,9 @@ class Kitana(object):
                     print("Access denied when accessing {}, going to server selection".format(self.server_name))
                     self.server_name = None
                     self.connection = None
-                    raise cherrypy.HTTPRedirect("{}servers".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
                 elif e.response.status_code == 404:
-                    raise cherrypy.HTTPRedirect("{}plugins".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/plugins"))
 
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
