@@ -70,7 +70,7 @@ I've included [sample configs](https://github.com/pannal/Kitana/tree/master/depl
 - profit
 
 ## Screenshots
-<blockquote class="imgur-embed-pub" lang="en" data-id="a/ovzXdjt"><a href="//imgur.com/ovzXdjt">Kitana</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+[Imgur Gallery](https://imgur.com/ovzXdjt)
 
 #### Command line options (`python kitana.py --help`)
 ```
