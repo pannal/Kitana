@@ -33,6 +33,9 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 - made to run behind reverse proxies (it doesn't provide its own HTTPS interface)
 - fully cross-platform 
 
+## Screenshots
+[Imgur Gallery](https://imgur.com/ovzXdjt)
+
 ## Installation
 ### Docker (the easy way)
 
@@ -68,9 +71,6 @@ I've included [sample configs](https://github.com/pannal/Kitana/tree/master/depl
 - authenticate against Plex.TV
 - select your server (non-owned may not work; local connections are preferred)
 - profit
-
-## Screenshots
-[Imgur Gallery](https://imgur.com/ovzXdjt)
 
 #### Command line options (`python kitana.py --help`)
 ```
