@@ -41,7 +41,7 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 ## Installation
 ### Docker (the easy way)
 
-##### Standlone
+##### Standalone
 This launches Kitana on port 31337:
 - ```docker run --name kitana -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
