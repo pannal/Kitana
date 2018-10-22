@@ -37,7 +37,7 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 ### Docker (the easy way)
 
 ##### Standlone
-This launches Kitana on port 31337.:
+This launches Kitana on port 31337:
 - ```docker run --name kitana -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
 ##### Mount on /kitana and behind a reverse proxy (example: NGINX)
@@ -63,6 +63,15 @@ I've included [sample configs](https://github.com/pannal/Kitana/tree/master/depl
 
 
 ## Usage
+- run kitana (see above)
+- open your browser and visit your Kitana instance (standalone: http://your-ip:31337)
+- authenticate against Plex.TV
+- select your server (non-owned may not work; local connections are preferred)
+- profit
+
+## Screenshots
+<blockquote class="imgur-embed-pub" lang="en" data-id="a/ovzXdjt"><a href="//imgur.com/ovzXdjt">Kitana</a></blockquote><script async src="//s.imgur.com/min/embed.js" charset="utf-8"></script>
+
 #### Command line options (`python kitana.py --help`)
 ```
 usage: kitana.py [-h] [-B HOST:PORT] [-a [BOOL]] [-i PLUGIN_IDENTIFIER]
@@ -112,6 +121,8 @@ False: "n, no, f, false, off, 0".
 ```
 
 ## Todo
+- use proper logging interface (as of now, `print()` is used)
+- add verbosity options
 - add HTTPS option
 - allow the use of config files instead of the command line options
 - add an auto update mechanism for everything but Docker
