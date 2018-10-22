@@ -1,13 +1,119 @@
-# <img src="https://github.com/pannal/Kitana/raw/master/static/img/android-icon-36x36.png" align="left" height="36" style="vertical-align: center">Kitana
+# <img src="https://github.com/pannal/Kitana/raw/master/static/img/android-icon-36x36.png" align="left" height="36" style="vertical-align: center">&nbsp;Kitana
 A responsive Plex plugin web frontend
 
-# building
-docker build --rm --pull -t kitana . && docker tag kitana pannal/kitana:latest && docker push pannal/kitana:latest
 
-# running
-docker run --name kitana -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -p /kitana -P
+If you like this, buy me a beer: <br>[![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=G9VKR2B8PMNKG) <br>or become a Patreon starting at **1 $ / month** <br><a href="https://www.patreon.com/subzero_plex" target="_blank"><img src="http://www.wenspencer.com/wp-content/uploads/2017/02/patreon-button.png" height="42" /></a>
 
-# upgrading
-docker stop kitana && docker rm kitana && docker pull pannal/kitana:latest
 
-re-run
+
+## Introduction
+#### What is Kitana?
+Kitana exposes your Plex plugin interfaces "to the outside world". It does that by authenticating against Plex.TV, then connecting to the Plex Media Server you tell it to, and essentially proxying the plugin UI.
+It has full PMS connection awareness and allows you to connect locally, remotely, or even via relay.
+
+It does that in a responsive way, so your Plugins are easily managable from your mobile phones for example, as well.
+
+***Running one instance of Kitana can serve infinite amounts of servers and plugins*** - you can even expose your Kitana instance to your friends, so they can manage their plugins as well, so they don't have to run their own Kitana instance.
+
+Kitana was built for [Sub-Zero](https://github.com/pannal/Sub-Zero.bundle) originally, but handles other plugins just as well.
+
+#### Isn't that a security concern?
+Not at all. Without a valid Plex.TV authentication, Kitana can do nothing. All authentication data is stored serverside inside the current user's session storage (which is long running), so unwanted third party access to your server is virtually impossible. 
+
+#### The Plex plugin UIs still suck, though!
+Yes, they do. Kitana does little to improve that, besides adding responsiveness to the whole situation.
+
+Also, it isn't designed to. Kitana is an intermediate solution to the recent problem posed by Plex Inc. and their plans to phase out all UI-based plugins from the Plex Media Server environment.
+
+## Features
+- small footprint by using the CherryPy framework
+- heavy caching for faster plugin handling
+- full PMS connection awareness and automatic fallback in case the configured connection is lost
+- fully responsive (CSS3)
+- made to run behind reverse proxies (it doesn't provide its own HTTPS interface)
+- fully cross-platform 
+
+## Installation
+#### Docker (the easy way)
+
+##### Standlone
+This launches Kitana on port 31337, locally. To expose the HTTP port, use `-p 0.0.0.0:31337:31337` instead of `-p 127.0.0.1:31337:31337`:
+- ```docker run --name kitana -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
+
+##### Mount on /kitana and behind a reverse proxy (example: NGINX)
+- ```docker run --name kitana -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -p /kitana -P```
+
+##### Upgrading
+- `docker stop kitana && docker rm kitana && docker pull pannal/kitana:latest`, then re-run it with the command above
+
+
+#### Manual installation
+Requirements:
+- Python3.5
+
+Installation:
+- go to the Kitana folder
+- `pip install -r requirements.txt`
+
+Running:
+- `python kitana.py`
+
+
+## Usage
+#### Command line options (`python kitana.py --help`)
+```
+usage: kitana.py [-h] [-B HOST:PORT] [-a [BOOL]] [-i PLUGIN_IDENTIFIER]
+                 [-p PREFIX] [-P [BOOL]] [-PH [PROXY_HOST_VAR] | -PB
+                 PROXY_BASE] [--shadow-assets [BOOL]] [-t TIMEOUT]
+                 [-pt PLEXTV_TIMEOUT]
+
+optional arguments:
+  -h, --help            show this help message and exit
+  -B HOST:PORT, --bind HOST:PORT
+                        Listen on address:port (default: 0.0.0.0:31337)
+  -a [BOOL], --autoreload [BOOL]
+                        Watch project files for changes and auto-reload?
+                        (default: False)
+  -i PLUGIN_IDENTIFIER, --plugin-identifier PLUGIN_IDENTIFIER
+                        The default plugin/channel to view on a server
+                        (default: com.plexapp.agents.subzero)
+  -p PREFIX, --prefix PREFIX
+                        Prefix to handle; used for reverse proxies normally
+                        (default: "/")
+  -P [BOOL], --behind-proxy [BOOL]
+                        Assume being ran behind a reverse proxy (default:
+                        False)
+  -PH [PROXY_HOST_VAR], --proxy-host-var [PROXY_HOST_VAR]
+                        When behind reverse proxy, get host from this var
+                        (NGINX: "Host", Squid: "Origin", Lighty/Apache:
+                        "X-Forwarded-Host") (default: "Host")
+  -PB PROXY_BASE, --proxy-base PROXY_BASE
+                        When behind a reverse proxy, assume this base URI
+                        instead of the bound address (e.g.: http://host.com;
+                        no slash at the end). Do *not* include the :prefix:
+                        here. (default: "Host (NGINX)")
+  --shadow-assets [BOOL]
+                        Pass PMS assets through the app to avoid exposing the
+                        plex token? (default: True)
+  -t TIMEOUT, --timeout TIMEOUT
+                        Connection timeout to the PMS (default: 5)
+  -pt PLEXTV_TIMEOUT, --plextv-timeout PLEXTV_TIMEOUT
+                        Connection timeout to the Plex.TV API (default: 15)
+
+BOOL can be:
+True: "y, yes, t, true, on, 1"
+False: "n, no, f, false, off, 0".
+
+[BOOL] indicates that when no value is given, True is used.
+
+```
+
+## Todo
+- add HTTPS option
+- allow the use of config files instead of the command line options
+- add an auto update mechanism for everything but Docker
+- (implement a video player for video plugins?)
+
+## Acknowledgments
+- Thanks to Tautulli for providing the [Javascript for proper authentication with Plex.TV](https://github.com/Tautulli/Tautulli/blob/master/data/interfaces/default/js/script.js).
+- Icon/Art based on Fan Icon from [http://www.malagatravelguide.net](http://www.malagatravelguide.net)
