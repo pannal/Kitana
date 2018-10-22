@@ -34,7 +34,7 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 - fully cross-platform 
 
 ## Screenshots
-[Imgur Gallery](https://imgur.com/ovzXdjt)
+[Imgur Gallery](https://imgur.com/a/ovzXdjt)
 
 ## Installation
 ### Docker (the easy way)
