@@ -66,10 +66,13 @@ $bgOpacity: opacity(30%)
       width: 100%
       background-color: $dark
       //border: 1px solid #4e4e4e
-      margin-bottom: 8px
+      margin-bottom: 1%
       position: relative
       box-sizing: border-box
       border-radius: 4px
+
+      @media (max-width: $vertBreaker)
+        margin-bottom: 2%
 
       &:hover
         background-color: $gray-900
@@ -77,12 +80,6 @@ $bgOpacity: opacity(30%)
         border-top-right-radius: 0
 
         > a
-          div.summary
-            margin:
-              left: -8px
-              right: -8px
-            border-right: 8px solid $gray-900
-            border-radius: 4px
           .thumb img
             opacity: 1
 
@@ -101,10 +98,13 @@ $bgOpacity: opacity(30%)
         div
           flex: 1 1 45%
           padding: 1%
+          -ms-word-break: break-word
+          word-break: break-word
 
           @media (max-width: $vertBreaker)
             flex: 0 0 100%
             display: block
+            padding: 2%
 
         .thumb
           flex: 0 0 10%
