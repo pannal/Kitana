@@ -62,6 +62,13 @@ Installation:
 Running:
 - `python kitana.py`
 
+### Windows
+- install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
+- `pip3.5 install -r requirements_win32.txt`
+
+Running:
+- `python3.5 kitana.py` (Note: asset proxying seems slow on win32, adding `--shadow-assets=False` is advised)
+
 
 ## Deployment
 I've included [sample configs](https://github.com/pannal/Kitana/tree/master/deployment) for running Kitana using supervisord, and an NGINX reverse-proxy sample config you can use.
