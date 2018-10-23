@@ -66,7 +66,8 @@ class Kitana(object):
     maintenance_ran = False
     has_update = False
 
-    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None):
+    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
+                 language="en"):
         self.initialized = False
         if os.path.exists("/.dockerenv"):
             self.running_as = "docker"
@@ -85,6 +86,7 @@ class Kitana(object):
         self.messages = None
         self.session = requests.Session()
         self.timeout = timeout
+        self.language = language
         self.plextv_timeout = plextv_timeout
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
@@ -123,10 +125,12 @@ class Kitana(object):
 
     def plex_dispatch(self, path):
         headers = {
-            "X-Plex-Token": self.plex_token
+            "X-Plex-Token": self.plex_token,
+            "X-Plex-Language": self.language,
         }
         r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
         r.raise_for_status()
+
         content = xmltodict.parse(r.content, attr_prefix="")
         return content["MediaContainer"]
 
@@ -515,6 +519,9 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--plugin-identifier', type=str, default="com.plexapp.agents.subzero",
                         metavar="PLUGIN_IDENTIFIER",
                         help="The default plugin/channel to view on a server (default: com.plexapp.agents.subzero)")
+    parser.add_argument('-l', '--plugin-language', type=str, default="en",
+                        metavar="LANGUAGE",
+                        help="The language to request when interacting with plugins (default: en)")
     parser.add_argument('-p', '--prefix', type=str, default="/", help="Prefix to handle; used for reverse proxies "
                                                                       "normally (default: \"/\")")
     parser.add_argument('-P', '--behind-proxy', type=bool, default=False, nargs="?", const=True, metavar="BOOL",
@@ -551,7 +558,11 @@ if __name__ == "__main__":
     prefix = args.prefix
 
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
-                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
+                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
+                    language=args.plugin_language)
+
+    if os.name == "nt":
+        args.autoreload = False
 
     cherrypy.config.update(
         {
