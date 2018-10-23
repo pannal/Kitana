@@ -16,7 +16,6 @@ import argparse
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from furl import furl
-from cherrypy.lib.static import serve_file
 from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
 from distutils.util import strtobool
@@ -27,6 +26,7 @@ from tools.cache import BigMemoryCache
 from util.argparse import MultilineFormatter
 from util.messages import message, render_messages
 from util.update import update_check, StrictVersion
+from util.sessions import FileSession
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -55,7 +55,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.1"
+    VERSION = "0.1.2"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -66,7 +66,8 @@ class Kitana(object):
     maintenance_ran = False
     has_update = False
 
-    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None):
+    def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
+                 language="en"):
         self.initialized = False
         if os.path.exists("/.dockerenv"):
             self.running_as = "docker"
@@ -74,7 +75,6 @@ class Kitana(object):
             self.running_as = "git"
 
         self.prefix = prefix
-        self._prefix = prefix if prefix.endswith("/") else prefix+"/"
         self.has_update = False
         self.maintenance_ran = False
         self.plex_token = None
@@ -86,6 +86,7 @@ class Kitana(object):
         self.messages = None
         self.session = requests.Session()
         self.timeout = timeout
+        self.language = language
         self.plextv_timeout = plextv_timeout
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
@@ -124,10 +125,12 @@ class Kitana(object):
 
     def plex_dispatch(self, path):
         headers = {
-            "X-Plex-Token": self.plex_token
+            "X-Plex-Token": self.plex_token,
+            "X-Plex-Language": self.language,
         }
         r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
         r.raise_for_status()
+
         content = xmltodict.parse(r.content, attr_prefix="")
         return content["MediaContainer"]
 
@@ -182,7 +185,7 @@ class Kitana(object):
         token = cherrypy.session.get("plex_token")
         if not token:
             print("No token, redirecting")
-            raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+            raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
         return token
 
     @plex_token.setter
@@ -305,7 +308,7 @@ class Kitana(object):
                     self.server_name = None
                     self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
-                    raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             raise
 
         content = xmltodict.parse(r.content, attr_prefix="")
@@ -367,7 +370,7 @@ class Kitana(object):
                     self.server_name = None
                     self.connection = None
                     print("Access denied when accessing {}, going to login".format(self.server_name))
-                    raise cherrypy.HTTPRedirect("{}token".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             except Timeout as e:
                 if not blacklist_addr:
                     blacklist_addr = []
@@ -405,7 +408,7 @@ class Kitana(object):
             if e.response.status_code == 401:
                 print("Access denied when accessing plugins on {}, going to server selection".format(self.server_name))
                 message("Access denied for plugins on {}".format(self.server_name), "ERROR")
-                raise cherrypy.HTTPRedirect("{}servers".format(self._prefix))
+                raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
 
         if (key and identifier) or default_identifier:
             ident = identifier or default_identifier
@@ -488,9 +491,9 @@ class Kitana(object):
                     print("Access denied when accessing {}, going to server selection".format(self.server_name))
                     self.server_name = None
                     self.connection = None
-                    raise cherrypy.HTTPRedirect("{}servers".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
                 elif e.response.status_code == 404:
-                    raise cherrypy.HTTPRedirect("{}plugins".format(self._prefix))
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/plugins"))
 
             print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
                                                                                          self.server_name))
@@ -506,7 +509,7 @@ if __name__ == "__main__":
     parser.epilog = "BOOL can be:\n" \
                     "True: \"y, yes, t, true, on, 1\"\n" \
                     "False: \"n, no, f, false, off, 0\".\n\n" \
-                    "[BOOL] indicates that when no value is given, True is used."
+                    "[BOOL] indicates that when no value is given, the default value is used."
 
     parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337",
                         help="Listen on address:port (default: 0.0.0.0:31337)",
@@ -516,6 +519,9 @@ if __name__ == "__main__":
     parser.add_argument('-i', '--plugin-identifier', type=str, default="com.plexapp.agents.subzero",
                         metavar="PLUGIN_IDENTIFIER",
                         help="The default plugin/channel to view on a server (default: com.plexapp.agents.subzero)")
+    parser.add_argument('-l', '--plugin-language', type=str, default="en",
+                        metavar="LANGUAGE",
+                        help="The language to request when interacting with plugins (default: en)")
     parser.add_argument('-p', '--prefix', type=str, default="/", help="Prefix to handle; used for reverse proxies "
                                                                       "normally (default: \"/\")")
     parser.add_argument('-P', '--behind-proxy', type=bool, default=False, nargs="?", const=True, metavar="BOOL",
@@ -552,7 +558,11 @@ if __name__ == "__main__":
     prefix = args.prefix
 
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
-                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier)
+                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
+                    language=args.plugin_language)
+
+    if os.name == "nt":
+        args.autoreload = False
 
     cherrypy.config.update(
         {
@@ -560,7 +570,7 @@ if __name__ == "__main__":
             'server.socket_port': int(port),
             'engine.autoreload.on': args.autoreload,
             "tools.sessions.on": True,
-            "tools.sessions.storage_class": cherrypy.lib.sessions.FileSession,
+            "tools.sessions.storage_class": FileSession,
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
@@ -577,6 +587,10 @@ if __name__ == "__main__":
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "static", "sass", "**")))
     cherrypy.tools.baseurloverride = BaseUrlOverride()
 
+    if os.name == "nt":
+        from util.win32 import ConsoleCtrlHandler
+        ConsoleCtrlHandler(cherrypy.engine).subscribe()
+
     conf = {
         "/": {
             "tools.sessions.on": True,
@@ -588,6 +602,15 @@ if __name__ == "__main__":
             'tools.expires.secs': 604800,
             'tools.staticdir.on': True,
             'tools.staticdir.dir': os.path.join(baseDir, "static"),
+            "tools.sessions.on": False,
+        },
+        '/favicon.ico': {
+            'tools.caching.on': True,
+            'tools.expires.on': True,
+            'tools.expires.secs': 604800,
+            "tools.sessions.on": False,
+            'tools.staticfile.on': True,
+            'tools.staticfile.filename': os.path.join(baseDir, "static", "img", "favicon.ico"),
         },
         '/pms_asset': {
             'tools.caching.on': True,
@@ -606,6 +629,7 @@ if __name__ == "__main__":
         'tools.expires.on': True,
         'tools.expires.secs': 604800,
         'tools.staticfile.on': True,
+        "tools.sessions.on": False,
     }
 
     # add handlers for version-hash based assets
@@ -615,7 +639,8 @@ if __name__ == "__main__":
         conf.update(
             {
                 key: dict(versioned_asset_base_conf,
-                          **{'tools.staticfile.filename': os.path.join(baseDir, "static", versioned_asset)}, )
+                          **{'tools.staticfile.filename': os.path.join(baseDir, "static",
+                                                                       versioned_asset.replace("/", os.sep))}, )
             }
         )
 

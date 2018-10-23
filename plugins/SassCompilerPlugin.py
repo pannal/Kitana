@@ -35,8 +35,8 @@ class SassCompilerPlugin(plugins.SimplePlugin):
     def compile_sass(self):
         cherrypy.log("Starting Sass Compile")
         for (dirpath, dirnames, filenames) in os.walk(os.getcwd()):
-            if dirpath.endswith('/sass'):
-                css_directory = Path(str(Path(dirpath).parent) + "/css")
+            if dirpath.endswith('{}sass'.format(os.sep)):
+                css_directory = Path(str(Path(dirpath).parent) + "{}css".format(os.sep))
 
                 if not css_directory.exists():
                     Path.mkdir(css_directory)

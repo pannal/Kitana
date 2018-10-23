@@ -6,13 +6,21 @@
         <div class="col-12">
             <ul>
                 {% for d in directory %}
-                    <li>
-                        <a href="{{ d.url if d.url else url(d.key) }}">
-                            <div class="thumb"><img src="{{ url(d.thumb) }}" class="rounded-left"/></div>
-                            <div class="title">{{ d.title.strip() }}</div>
-                            <div class="summary">{{ d.summary }}</div>
-                        </a>
-                    </li>
+                    {% if not d.settings %}
+                        {% set uri = d.url if d.url else url(d.key) %}
+                        {% set uri_external = False %}
+                        {% if d.title and d.title.startswith("http") %}
+                            {% set uri = d.title %}
+                            {% set uri_external = True %}
+                        {% endif %}
+                        <li>
+                            <a href="{{ uri }}"{% if uri_external %} target="_blank"{% endif %}>
+                                <div class="thumb">{% if d.thumb %}<img src="{{ url(d.thumb) }}" class="rounded-left"/>{% endif %}</div>
+                                <div class="title">{{ d.title.strip() }}</div>
+                                <div class="summary">{{ d.summary }}</div>
+                            </a>
+                        </li>
+                    {% endif %}
                 {% endfor %}
             </ul>
         </div>
