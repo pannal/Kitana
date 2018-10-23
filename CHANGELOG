@@ -7,6 +7,7 @@
   - disable autoreloader
 
 - support WebTools (including launching WebTools)
+- ship empty data/sessions folder
 
 0.1.1
 - fix redirect to /token
