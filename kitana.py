@@ -587,6 +587,15 @@ if __name__ == "__main__":
             'tools.expires.secs': 604800,
             'tools.staticdir.on': True,
             'tools.staticdir.dir': os.path.join(baseDir, "static"),
+            "tools.sessions.on": False,
+        },
+        '/favicon.ico': {
+            'tools.caching.on': True,
+            'tools.expires.on': True,
+            'tools.expires.secs': 604800,
+            "tools.sessions.on": False,
+            'tools.staticfile.on': True,
+            'tools.staticfile.filename': os.path.join(baseDir, "static", "img", "favicon.ico"),
         },
         '/pms_asset': {
             'tools.caching.on': True,
@@ -605,6 +614,7 @@ if __name__ == "__main__":
         'tools.expires.on': True,
         'tools.expires.secs': 604800,
         'tools.staticfile.on': True,
+        "tools.sessions.on": False,
     }
 
     # add handlers for version-hash based assets
@@ -614,7 +624,8 @@ if __name__ == "__main__":
         conf.update(
             {
                 key: dict(versioned_asset_base_conf,
-                          **{'tools.staticfile.filename': os.path.join(baseDir, "static", versioned_asset)}, )
+                          **{'tools.staticfile.filename': os.path.join(baseDir, "static",
+                                                                       versioned_asset.replace("/", os.sep))}, )
             }
         )
 
