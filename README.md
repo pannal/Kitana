@@ -39,7 +39,8 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 [Imgur Gallery](https://imgur.com/a/ovzXdjt)
 
 ## Installation
-### Docker (the easy way)
+### Docker (the easy way, Windows included)
+Install [Docker](https://docs.docker.com/install/#supported-platforms)
 
 ##### Standalone
 This launches Kitana on port 31337:
