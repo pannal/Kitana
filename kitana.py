@@ -522,9 +522,9 @@ if __name__ == "__main__":
 
     parser.register('type', bool, strtobool)
     parser.epilog = "BOOL can be:\n" \
-                    "True: \"y, yes, t, true, on, 1\"\n" \
-                    "False: \"n, no, f, false, off, 0\".\n\n" \
-                    "[BOOL] indicates that when no value is given, the default value is used."
+                    "True: \"y, yes, t, true, True, on, 1\"\n" \
+                    "False: \"n, no, f, false, False, off, 0\".\n\n" \
+                    "[BOOL] indicates that when the switch but no value is given, True is used."
 
     parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337",
                         help="Listen on address:port (default: 0.0.0.0:31337)",

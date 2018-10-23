@@ -126,10 +126,10 @@ optional arguments:
                         Connection timeout to the Plex.TV API (default: 15)
 
 BOOL can be:
-True: "y, yes, t, true, on, 1"
-False: "n, no, f, false, off, 0".
+True: "y, yes, t, true, True, on, 1"
+False: "n, no, f, false, False, off, 0".
 
-[BOOL] indicates that when no value is given, the default value is used.
+[BOOL] indicates that when the switch but no value is given, True is used.
 ```
 
 ## Todo
