@@ -1,3 +1,13 @@
+0.1.2
+- better fix for redirect to /token
+- support and fixes for win32
+  - fix sass compilation
+  - correctly serve static files
+  - add CTRL-C handler
+  - disable autoreloader
+
+- support WebTools (including launching WebTools)
+
 0.1.1
 - fix redirect to /token
 

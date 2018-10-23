@@ -77,8 +77,8 @@ I've included [sample configs](https://github.com/pannal/Kitana/tree/master/depl
 #### Command line options (`python kitana.py --help`)
 ```
 usage: kitana.py [-h] [-B HOST:PORT] [-a [BOOL]] [-i PLUGIN_IDENTIFIER]
-                 [-p PREFIX] [-P [BOOL]] [-PH [PROXY_HOST_VAR] | -PB
-                 PROXY_BASE] [--shadow-assets [BOOL]] [-t TIMEOUT]
+                 [-l LANGUAGE] [-p PREFIX] [-P [BOOL]] [-PH [PROXY_HOST_VAR] |
+                 -PB PROXY_BASE] [--shadow-assets [BOOL]] [-t TIMEOUT]
                  [-pt PLEXTV_TIMEOUT]
 
 optional arguments:
@@ -91,6 +91,9 @@ optional arguments:
   -i PLUGIN_IDENTIFIER, --plugin-identifier PLUGIN_IDENTIFIER
                         The default plugin/channel to view on a server
                         (default: com.plexapp.agents.subzero)
+  -l LANGUAGE, --plugin-language LANGUAGE
+                        The language to request when interacting with plugins
+                        (default: en)
   -p PREFIX, --prefix PREFIX
                         Prefix to handle; used for reverse proxies normally
                         (default: "/")
@@ -118,8 +121,7 @@ BOOL can be:
 True: "y, yes, t, true, on, 1"
 False: "n, no, f, false, off, 0".
 
-[BOOL] indicates that when no value is given, True is used.
-
+[BOOL] indicates that when no value is given, the default value is used.
 ```
 
 ## Todo
@@ -129,6 +131,8 @@ False: "n, no, f, false, off, 0".
 - allow the use of config files instead of the command line options
 - add an auto update mechanism for everything but Docker
 - (implement a video player for video plugins?)
+- add theming engine
+- add service for win32
 
 ## Acknowledgments
 - Thanks to Tautulli for providing the [Javascript for proper authentication with Plex.TV](https://github.com/Tautulli/Tautulli/blob/master/data/interfaces/default/js/script.js).

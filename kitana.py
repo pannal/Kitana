@@ -55,7 +55,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.1"
+    VERSION = "0.1.2"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -509,7 +509,7 @@ if __name__ == "__main__":
     parser.epilog = "BOOL can be:\n" \
                     "True: \"y, yes, t, true, on, 1\"\n" \
                     "False: \"n, no, f, false, off, 0\".\n\n" \
-                    "[BOOL] indicates that when no value is given, True is used."
+                    "[BOOL] indicates that when no value is given, the default value is used."
 
     parser.add_argument('-B', '--bind', type=str, default="0.0.0.0:31337",
                         help="Listen on address:port (default: 0.0.0.0:31337)",
