@@ -41,7 +41,7 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 ## Installation
 ### Docker (the easy way)
 
-##### Standlone
+##### Standalone
 This launches Kitana on port 31337:
 - ```docker run --name kitana -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
@@ -61,6 +61,13 @@ Installation:
 
 Running:
 - `python kitana.py`
+
+### Windows
+- install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
+- `pip3.5 install -r requirements_win32.txt`
+
+Running:
+- `python3.5 kitana.py` (Note: asset proxying seems slow on win32, adding `--shadow-assets=False` is advised)
 
 
 ## Deployment
