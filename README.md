@@ -63,7 +63,7 @@ Installation:
 Running:
 - `python kitana.py`
 
-### Windows
+##### Windows
 - install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
 - `pip3.5 install -r requirements_win32.txt`
 
