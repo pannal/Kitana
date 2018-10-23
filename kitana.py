@@ -34,6 +34,7 @@ env = Environment(
 )
 
 template = env.get_template('index.jinja2')
+isWin32 = os.name == "nt"
 
 
 @cherrypy.tools.register('before_handler')
@@ -134,8 +135,18 @@ class Kitana(object):
         content = xmltodict.parse(r.content, attr_prefix="")
         return content["MediaContainer"]
 
+    def merge_plugin_data(self, data):
+        out = []
+        keys = ["Video", "Directory"]
+        for key in keys:
+            if key in data and data[key]:
+                out += data[key]
+
+        return out
+
     def render_plugin(self, path):
         content = self.plex_dispatch(path)
+
         try:
             has_content = int(content["size"]) > 0
         except ValueError:
@@ -147,7 +158,11 @@ class Kitana(object):
             self.plugin = None
             raise cherrypy.HTTPRedirect(self.prefix)
 
-        return template.render(data=content, **self.default_context)
+        items = self.merge_plugin_data(content)
+        content["Directory"] = None
+        content["Video"] = None
+
+        return template.render(data=content, items=items, **self.default_context)
 
     @property
     def default_context(self):
@@ -537,8 +552,9 @@ if __name__ == "__main__":
                             "this base URI instead of the bound address "
                             "(e.g.: http://host.com; no slash at the end). "
                             "Do *not* include the :prefix: here. (default: \"Host (NGINX)\")")
-    parser.add_argument('--shadow-assets', type=bool, default=True, metavar="BOOL", nargs="?", const=True,
-                        help="Pass PMS assets through the app to avoid exposing the plex token? (default: True)")
+    parser.add_argument('--shadow-assets', type=bool, default=not isWin32, metavar="BOOL", nargs="?", const=True,
+                        help="Pass PMS assets through the app to avoid exposing the plex token? (default: {})"
+                        .format(not isWin32))
     parser.add_argument('-t', '--timeout', type=int, default=5,
                         help="Connection timeout to the PMS (default: 5)")
     parser.add_argument('-pt', '--plextv-timeout', type=int, default=15,
@@ -561,7 +577,7 @@ if __name__ == "__main__":
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
                     language=args.plugin_language)
 
-    if os.name == "nt":
+    if isWin32:
         args.autoreload = False
 
     cherrypy.config.update(
@@ -587,7 +603,7 @@ if __name__ == "__main__":
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "static", "sass", "**")))
     cherrypy.tools.baseurloverride = BaseUrlOverride()
 
-    if os.name == "nt":
+    if isWin32:
         from util.win32 import ConsoleCtrlHandler
         ConsoleCtrlHandler(cherrypy.engine).subscribe()
 

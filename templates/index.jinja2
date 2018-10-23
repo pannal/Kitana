@@ -1,14 +1,18 @@
 {% extends "base.jinja2" %}
 {% block content %}
-    {% set directory = data.Directory or data.Video %}
     <p>{{ data.title1 or data.title2 or data.sourceTitle }} <span class="badge badge-dark">{{ data.size }}</span></p>
     <div class="row">
         <div class="col-12">
             <ul>
-                {% for d in directory %}
-                    {% if not d.settings %}
-                        {% set uri = d.url if d.url else url(d.key) %}
+                {% for d in items %}
+                    {% if not d.settings and (d.key or d.url) %}
                         {% set uri_external = False %}
+                        {% if d.url %}
+                            {% set uri = d.url if d.url else url(d.key) %}
+                            {% set uri_external = True %}
+                        {% else %}
+                            {% set uri = url(d.key) %}
+                        {% endif %}
                         {% if d.title and d.title.startswith("http") %}
                             {% set uri = d.title %}
                             {% set uri_external = True %}
