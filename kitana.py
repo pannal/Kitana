@@ -16,7 +16,6 @@ import argparse
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from furl import furl
-from cherrypy.lib.static import serve_file
 from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
 from distutils.util import strtobool
@@ -27,6 +26,7 @@ from tools.cache import BigMemoryCache
 from util.argparse import MultilineFormatter
 from util.messages import message, render_messages
 from util.update import update_check, StrictVersion
+from util.sessions import FileSession
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -559,7 +559,7 @@ if __name__ == "__main__":
             'server.socket_port': int(port),
             'engine.autoreload.on': args.autoreload,
             "tools.sessions.on": True,
-            "tools.sessions.storage_class": cherrypy.lib.sessions.FileSession,
+            "tools.sessions.storage_class": FileSession,
             "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
@@ -575,6 +575,10 @@ if __name__ == "__main__":
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "templates", "**")))
     cherrypy.engine.autoreload.files.update(glob.glob(os.path.join(baseDir, "static", "sass", "**")))
     cherrypy.tools.baseurloverride = BaseUrlOverride()
+
+    if os.name == "nt":
+        from util.win32 import ConsoleCtrlHandler
+        ConsoleCtrlHandler(cherrypy.engine).subscribe()
 
     conf = {
         "/": {

@@ -133,3 +133,4 @@ False: "n, no, f, false, off, 0".
 ## Acknowledgments
 - Thanks to Tautulli for providing the [Javascript for proper authentication with Plex.TV](https://github.com/Tautulli/Tautulli/blob/master/data/interfaces/default/js/script.js).
 - Icon/Art based on Fan Icon from [http://www.malagatravelguide.net](http://www.malagatravelguide.net)
+- PyWin32 CherryPy Console/Service handler from [googleappengine](https://chromium.googlesource.com/external/googleappengine/python/+/master/lib/cherrypy/cherrypy/process/win32.py)
