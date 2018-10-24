@@ -1,11 +1,12 @@
 {% extends "base.jinja2" %}
 {% block content %}
-    <p>{{ data.title1 or data.title2 or data.sourceTitle }} <span class="badge badge-dark">{{ data.size }}</span></p>
+    {% set item_count = namespace(a=0) %}
     <div class="row">
         <div class="col-12">
             <ul>
                 {% for d in items %}
                     {% if not d.settings and (d.key or d.url) %}
+                        {% set item_count.a = item_count.a + 1 %}
                         {% set uri_external = False %}
                         {% if d.url %}
                             {% set uri = d.url if d.url else url(d.key) %}
@@ -29,4 +30,5 @@
             </ul>
         </div>
     </div>
+    <p class="title">{{ data.title1 or data.title2 or data.sourceTitle }} <span class="badge badge-dark">{{ item_count.a }}</span></p>
 {% endblock %}

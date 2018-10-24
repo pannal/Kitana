@@ -46,8 +46,8 @@
     <div id="content" class="container-fluid">
         {% block messages %}{% include "messages.jinja2" with context %}{% endblock %}
         {% block content %}{% endblock %}
-        <p class="text-center">{{ product_identifier }} v{{ version }} ({{ running_as }})</p>
     </div>
+    <p class="text-center">{{ product_identifier }} v{{ version }} ({{ running_as }})</p>
 {% endblock %}
 </body>
 </html>

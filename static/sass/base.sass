@@ -12,11 +12,12 @@ $belowBig: 1920px
 $maxWidth: 1140px
 
 #content
-  display: block
+  display: flex
   left: 0
   right: 0
   z-index: 0
   margin-top: 16px
+  flex-direction: column-reverse
 
   //@media (max-width: $vertBreaker)
     padding: 16px 8px
@@ -56,6 +57,7 @@ $bgOpacity: opacity(30%)
 
   div
     box-sizing: border-box
+    height: auto
 
   ul
     list-style: none
