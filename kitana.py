@@ -545,7 +545,8 @@ if __name__ == "__main__":
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host", metavar="PROXY_HOST_VAR",
                        help="When behind reverse proxy, get host from this var "
-                            "(NGINX: \"Host\", Squid: \"Origin\", Lighty/Apache: \"X-Forwarded-Host\") "
+                            "(NGINX: \"Host\", Squid: \"Origin\", Lighty/Apache: "
+                            "\"X-Forwarded-Host\", IIS: \"Host\" (see README)) "
                             "(default: \"Host\")")
     group.add_argument('-PB', '--proxy-base', type=str, default=None,
                        help="When behind a reverse proxy, assume "

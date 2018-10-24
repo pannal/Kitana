@@ -70,6 +70,8 @@ Running:
 Running:
 - `python3.5 kitana.py` (Note: asset proxying seems slow on win32, adding `--shadow-assets=False` is advised)
 
+Running behind IIS:
+- `%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/proxy -preserveHostHeader:true /commit:apphost` ([Stackoverflow](https://stackoverflow.com/a/14842856))
 
 ## Deployment
 I've included [sample configs](https://github.com/pannal/Kitana/tree/master/deployment) for running Kitana using supervisord, and an NGINX reverse-proxy sample config you can use.
@@ -111,7 +113,8 @@ optional arguments:
   -PH [PROXY_HOST_VAR], --proxy-host-var [PROXY_HOST_VAR]
                         When behind reverse proxy, get host from this var
                         (NGINX: "Host", Squid: "Origin", Lighty/Apache:
-                        "X-Forwarded-Host") (default: "Host")
+                        "X-Forwarded-Host", IIS: "Host" (see README))
+                        (default: "Host")
   -PB PROXY_BASE, --proxy-base PROXY_BASE
                         When behind a reverse proxy, assume this base URI
                         instead of the bound address (e.g.: http://host.com;
@@ -130,6 +133,7 @@ True: "y, yes, t, true, True, on, 1"
 False: "n, no, f, false, False, off, 0".
 
 [BOOL] indicates that when the switch but no value is given, True is used.
+
 ```
 
 ## Todo
