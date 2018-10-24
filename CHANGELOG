@@ -1,9 +1,11 @@
 0.1.3
 - improve (video) plugin handling
 - default shadow-assets to off on win32
+- docker support approved on win32
 
 0.1.2
 - better fix for redirect to /token
+- add option to specify plugin language (default: en)
 - support and fixes for win32
   - fix sass compilation
   - correctly serve static files
