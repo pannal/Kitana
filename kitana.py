@@ -56,7 +56,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.4"
+    VERSION = "0.1.5"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -132,7 +132,7 @@ class Kitana(object):
         r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
         r.raise_for_status()
 
-        content = xmltodict.parse(r.content, attr_prefix="")
+        content = xmltodict.parse(r.content, attr_prefix="", force_list=("Video", "Directory"))
         return content["MediaContainer"]
 
     def merge_plugin_data(self, data):
@@ -326,7 +326,7 @@ class Kitana(object):
                     raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             raise
 
-        content = xmltodict.parse(r.content, attr_prefix="")
+        content = xmltodict.parse(r.content, attr_prefix="", force_list=("Device", "Connection"))
         servers = OrderedDict()
         # import pprint
         # pprint.pprint(content)
