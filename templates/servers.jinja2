@@ -23,7 +23,8 @@
         {% for server, data in servers.items() %}
             <div class="card text-white bg-dark mb-3">
                 <div class="card-header">
-                    {{ server }}{% if data.owned %}&nbsp;<span class="badge badge-primary">owned</span>{% endif %}</div>
+                    {{ server }}{% if data.owned %}&nbsp;<span class="badge badge-primary">owned</span>{% endif %}
+                </div>
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         {% for connection in data["connections"] %}

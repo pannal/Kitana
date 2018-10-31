@@ -43,7 +43,7 @@
     <div id="nav">
         {% block nav %}{% include "nav.jinja2" with context %}{% endblock %}
     </div>
-    <div id="content" class="container-fluid">
+    <div id="content" class="container-fluid {% block content_class %}{% endblock %}">
         {% block messages %}{% include "messages.jinja2" with context %}{% endblock %}
         {% block content %}{% endblock %}
     </div>
