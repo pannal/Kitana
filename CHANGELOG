@@ -1,6 +1,7 @@
 0.1.5
 - resolve display issues introduced with 0.1.4
 - fix usage with single Devices or single Connection entries
+- update requests to 2.20.0 (security issue)
 
 0.1.4
 - plugins: show true (visible) item count
