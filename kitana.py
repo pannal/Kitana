@@ -56,7 +56,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.5"
+    VERSION = "0.1.5b1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
