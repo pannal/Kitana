@@ -27,6 +27,7 @@ from util.argparse import MultilineFormatter
 from util.messages import message, render_messages
 from util.update import update_check, StrictVersion
 from util.sessions import FileSession
+from util.str_util import mask_str, mask_url
 
 env = Environment(
     loader=PackageLoader('kitana', 'templates'),
@@ -156,7 +157,7 @@ class Kitana(object):
             message("No plugin data returned", "WARNING")
             print("No plugin data returned, returning to plugin selection")
             self.plugin = None
-            raise cherrypy.HTTPRedirect(self.prefix)
+            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
         items = self.merge_plugin_data(content)
         content["Directory"] = None
@@ -313,7 +314,8 @@ class Kitana(object):
 
     def discover_pms(self, server_name=None, server_addr=None, blacklist_addr=None):
         try:
-            r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1", headers=self.full_headers,
+            r = self.session.get("https://plex.tv/api/resources?includeHttps=1&includeRelay=1",
+                                 headers=self.full_headers,
                                  timeout=self.plextv_timeout)
             r.raise_for_status()
         except (HTTPError, Timeout) as e:
@@ -352,7 +354,7 @@ class Kitana(object):
                                                "publicAddressMatches": public_address_matches}
 
                 if blacklist_addr and connection["uri"] in blacklist_addr:
-                    print("{}: {} on blacklist, skipping".format(device["name"], connection["uri"]))
+                    print("{}: {} on blacklist, skipping".format(mask_str(device["name"]), mask_url(connection["uri"])))
                     connection["unavailable"] = True
                     continue
 
@@ -375,8 +377,8 @@ class Kitana(object):
             self.connection = use_connection
             server_addr = use_connection["uri"]
 
-            print("Server set to: {}, {}".format(server_name, server_addr))
-            print("Verifying {}: {}".format(server_name, server_addr))
+            print("Server set to: {}, {}".format(mask_str(server_name), mask_url(server_addr)))
+            print("Verifying {}: {}".format(mask_str(server_name), mask_url(server_addr)))
             try:
                 self.session.get(self.server_addr + "servers", headers=self.full_headers, **self.req_defaults)
             except HTTPError as e:
@@ -384,26 +386,31 @@ class Kitana(object):
                     self.plex_token = None
                     self.server_name = None
                     self.connection = None
-                    print("Access denied when accessing {}, going to login".format(self.server_name))
+                    print("Access denied when accessing {}, going to login".format(mask_str(self.server_name)))
                     raise cherrypy.HTTPRedirect(cherrypy.url("/token"))
             except Timeout as e:
                 if not blacklist_addr:
                     blacklist_addr = []
                 blacklist_addr.append(server_addr)
-                print("{}: Blacklisting {} due to: {!r}".format(server_name, server_addr, e))
+                print("{}: Blacklisting {} due to: {!r}".format(mask_str(server_name), mask_url(server_addr), type(e)))
                 return self.discover_pms(server_name=server_name, server_addr=None, blacklist_addr=blacklist_addr)
 
-            print("Verified {}: {}".format(server_name, server_addr))
+            print("Verified {}: {}".format(mask_str(server_name), mask_url(server_addr)))
             self.plugin = None
             message("Successfully connected to {}".format(self.server_name), "SUCCESS")
-            raise cherrypy.HTTPRedirect(self.prefix)
+            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
         return servers
 
     @property
     def server_plugins(self):
         if not self.server_addr:
-            raise cherrypy.HTTPRedirect(self.prefix)
+            con = self.connection.copy()
+            con["uri"] = mask_url(con.get("uri", ""))
+            con["address"] = mask_str(con.get("address", ""))
+
+            print("No server address set, redirecting to root. Connection: {!r}".format(con))
+            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
         return self.plex_dispatch("channels/all")
 
     @cherrypy.expose
@@ -421,7 +428,8 @@ class Kitana(object):
             plugins = self.plugins = self.server_plugins.get("Directory", [])
         except HTTPError as e:
             if e.response.status_code == 401:
-                print("Access denied when accessing plugins on {}, going to server selection".format(self.server_name))
+                print("Access denied when accessing plugins on {}, going to server selection".format(
+                    mask_str(self.server_name)))
                 message("Access denied for plugins on {}".format(self.server_name), "ERROR")
                 raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
 
@@ -432,7 +440,7 @@ class Kitana(object):
                     self.plugin = plugin
 
                     print("Plugin chosen: {}".format(plugin["title"]))
-                    raise cherrypy.HTTPRedirect(self.prefix)
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
         template = env.get_template('plugins.jinja2')
 
@@ -448,10 +456,12 @@ class Kitana(object):
             }, headers=self.plex_headers, **self.req_defaults)
             r.raise_for_status()
             self.plex_token = r.json()["user"]["authToken"]
-            raise cherrypy.HTTPRedirect(self.prefix)
+            print("Token received via credentials login")
+            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
         if token:
             self.plex_token = token
+            print("Token received via plex.tv auth")
             return json.dumps({"url": cherrypy.url(self.prefix)})
 
         template = env.get_template('token.jinja2')
@@ -462,7 +472,7 @@ class Kitana(object):
         self.plex_token = None
         self.server_name = None
         self.connection = None
-        raise cherrypy.HTTPRedirect(self.prefix)
+        raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
     @cherrypy.expose
     def pms_asset(self, url):
@@ -503,15 +513,16 @@ class Kitana(object):
             if isinstance(e, HTTPError):
                 if e.response.status_code == 401:
                     message("Access denied on {}".format(self.server_name), "ERROR")
-                    print("Access denied when accessing {}, going to server selection".format(self.server_name))
+                    print("Access denied when accessing {},"
+                          " going to server selection".format(mask_str(self.server_name)))
                     self.server_name = None
                     self.connection = None
                     raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
                 elif e.response.status_code == 404:
                     raise cherrypy.HTTPRedirect(cherrypy.url("/plugins"))
 
-            print("Error when connecting to '{}', trying other connection to: {}".format(self.server_addr,
-                                                                                         self.server_name))
+            print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
+                                                                                         mask_str(self.server_name)))
             return self.discover_pms(self.server_name)
 
 
@@ -606,6 +617,7 @@ if __name__ == "__main__":
 
     if isWin32:
         from util.win32 import ConsoleCtrlHandler
+
         ConsoleCtrlHandler(cherrypy.engine).subscribe()
 
     conf = {
