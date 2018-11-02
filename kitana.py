@@ -12,6 +12,7 @@ import json
 import uuid
 import urllib
 import argparse
+import traceback
 
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
@@ -524,6 +525,8 @@ class Kitana(object):
             print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
                                                                                          mask_str(self.server_name)))
             return self.discover_pms(self.server_name)
+        except:
+            print("Something went wrong. {}".format(traceback.format_exc()))
 
 
 parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
