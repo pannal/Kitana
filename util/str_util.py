@@ -9,6 +9,9 @@ def mask_str(s, visible=4):
     if visible > quarter:
         visible = quarter
 
+    if not visible:
+        return s[:1].ljust(len(s), "*")
+
     left = s[:visible]
     right = s[-visible:]
     center = s[visible:-visible]
