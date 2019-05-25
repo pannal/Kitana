@@ -419,7 +419,7 @@ class Kitana(object):
     def servers(self, server_name=None, server_addr=None):
         servers = self.discover_pms(server_name=server_name, server_addr=server_addr)
         template = env.get_template('servers.jinja2')
-        return template.render(plex_headers_json=json.dumps(self.plex_headers), **self.default_context, servers=servers)
+        return template.render(plex_headers_json=json.dumps(self.plex_headers), servers=servers, **self.default_context)
 
     @cherrypy.expose
     @cherrypy.tools.maintenance()
@@ -522,6 +522,9 @@ class Kitana(object):
                 elif e.response.status_code == 404:
                     raise cherrypy.HTTPRedirect(cherrypy.url("/plugins"))
 
+            else:
+                message("Timeout on {}".format(self.server_name), "WARNING")
+
             print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
                                                                                          mask_str(self.server_name)))
             return self.discover_pms(self.server_name)
@@ -570,9 +573,9 @@ if __name__ == "__main__":
     parser.add_argument('--shadow-assets', type=bool, default=not isWin32, metavar="BOOL", nargs="?", const=True,
                         help="Pass PMS assets through the app to avoid exposing the plex token? (default: {})"
                         .format(not isWin32))
-    parser.add_argument('-t', '--timeout', type=int, default=5,
+    parser.add_argument('-t', '--timeout', type=int, default=15,
                         help="Connection timeout to the PMS (default: 5)")
-    parser.add_argument('-pt', '--plextv-timeout', type=int, default=15,
+    parser.add_argument('-pt', '--plextv-timeout', type=int, default=25,
                         help="Connection timeout to the Plex.TV API (default: 15)")
 
     args = parser.parse_args()
