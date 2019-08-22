@@ -1,5 +1,3 @@
-# -*- coding: future_fstrings -*-
-
 import cherrypy
 from cherrypy.process import wspbus, plugins
 from pathlib import Path
@@ -10,6 +8,7 @@ import shutil
 __author__ = "Randy Yang (https://www.gitlab.com/randyyaj)"
 __license__ = "MIT"
 __version__ = "0.1.0"
+
 
 class SassCompilerPlugin(plugins.SimplePlugin):
     """
@@ -44,5 +43,5 @@ class SassCompilerPlugin(plugins.SimplePlugin):
                     shutil.rmtree(str(css_directory))
                     Path.mkdir(css_directory)
 
-                cherrypy.log(f'{self.__class__.__name__}: Compiling {dirpath} to {str(css_directory)}')
+                cherrypy.log('{}: Compiling {} to {}'.format(self.__class__.__name__, dirpath, str(css_directory)))
                 sass.compile(dirname=(dirpath, str(css_directory)), output_style='compressed')
