@@ -598,6 +598,13 @@ if __name__ == "__main__":
     if isWin32:
         args.autoreload = False
 
+    sessions_dir = os.path.join(baseDir, "data", "sessions")
+    if not os.path.exists(sessions_dir):
+        try:
+            os.makedirs(sessions_dir, exist_ok=True)
+        except:
+            print("{} doesn't exist and couldn't be created".format(sessions_dir))
+
     cherrypy.config.update(
         {
             'server.socket_host': host,
@@ -605,7 +612,7 @@ if __name__ == "__main__":
             'engine.autoreload.on': args.autoreload,
             "tools.sessions.on": True,
             "tools.sessions.storage_class": FileSession,
-            "tools.sessions.storage_path": os.path.join(baseDir, "data", "sessions"),
+            "tools.sessions.storage_path": sessions_dir,
             "tools.sessions.timeout": 525600,
             "tools.sessions.name": "kitana_session_id",
             "tools.sessions.locking": 'early',
