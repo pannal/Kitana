@@ -537,6 +537,14 @@ parser = argparse.ArgumentParser(formatter_class=MultilineFormatter)
 if __name__ == "__main__":
     baseDir = os.path.dirname(os.path.abspath(__file__))
 
+    # Create data/sessions directory if not already present
+    sessionsPath = os.path.join(baseDir, "data", "sessions")
+    if os.path.exists(sessionsPath):
+        print("Sessions directory already exists: '{}'".format(sessionsPath))
+    else:
+        os.makedirs(sessionsPath, exist_ok=True)
+        print("Created sessions directory: '{}'".format(sessionsPath))
+
     parser.register('type', bool, strtobool)
     parser.epilog = "BOOL can be:\n" \
                     "True: \"y, yes, t, true, True, on, 1\"\n" \
