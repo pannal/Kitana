@@ -601,7 +601,7 @@ if __name__ == "__main__":
     sessions_dir = os.path.join(baseDir, "data", "sessions")
     if not os.path.exists(sessions_dir):
         try:
-            os.mkdir(sessions_dir)
+            os.makedirs(sessions_dir, exist_ok=True)
         except:
             print("{} doesn't exist and couldn't be created".format(sessions_dir))
 
