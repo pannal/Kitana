@@ -1,3 +1,10 @@
+0.1.6
+- remove future-fstrings requirement
+- add Dockerfile for armhf (#10, thanks @Raph521)
+- change default timeout to 15 (was 5)
+- change default plextv timeout to 25 (was 15)
+- try creating the data/sessions folder if it isn't already there (#10)
+
 0.1.5
 - resolve display issues introduced with 0.1.4
 - fix usage with single Devices or single Connection entries
