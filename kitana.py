@@ -14,6 +14,7 @@ import urllib
 import argparse
 import traceback
 
+from cherrypy import HTTPRedirect
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from furl import furl
@@ -126,6 +127,13 @@ class Kitana(object):
         f.set(path=".".join([base, self.version_hash]) + ext)
         return cherrypy.url(f.url)
 
+    def is_url(self, url):
+        try:
+            result = urlparse(url)
+            return all([result.scheme, result.netloc])
+        except ValueError:
+            return False
+
     def plex_dispatch(self, path):
         headers = {
             "X-Plex-Token": self.plex_token,
@@ -155,6 +163,11 @@ class Kitana(object):
             has_content = False
 
         if not has_content:
+            redirect = content.get("title2", None)
+            # this is basically meant for SZ. title2 can contain a full URL to which we will redirect
+            if redirect and self.is_url(redirect):
+                raise cherrypy.HTTPRedirect(redirect)
+
             message("No plugin data returned", "WARNING")
             print("No plugin data returned, returning to plugin selection")
             self.plugin = None
@@ -528,6 +541,8 @@ class Kitana(object):
             print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
                                                                                          mask_str(self.server_name)))
             return self.discover_pms(self.server_name)
+        except HTTPRedirect:
+            raise
         except:
             print("Something went wrong. {}".format(traceback.format_exc()))
 
