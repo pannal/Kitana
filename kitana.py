@@ -468,10 +468,15 @@ class Kitana(object):
                 "user[login]": username,
                 "user[password]": password,
             }, headers=self.plex_headers, **self.req_defaults)
-            r.raise_for_status()
-            self.plex_token = r.json()["user"]["authToken"]
-            print("Token received via credentials login")
-            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
+            try:
+                r.raise_for_status()
+            except HTTPError as e:
+                if e.response.status_code == 401:
+                    message("Wrong username and/or password", "ERROR")
+            else:
+                self.plex_token = r.json()["user"]["authToken"]
+                print("Token received via credentials login")
+                raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
         if token:
             self.plex_token = token
