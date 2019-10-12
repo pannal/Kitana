@@ -46,6 +46,9 @@ Install [Docker](https://docs.docker.com/install/#supported-platforms)
 This launches Kitana on port 31337:
 - ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
+##### Mount behind a reverse proxy (example: NGINX)
+- ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -P```
+
 ##### Mount on /kitana and behind a reverse proxy (example: NGINX)
 - ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -p /kitana -P```
 
