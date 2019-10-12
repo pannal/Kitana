@@ -1,3 +1,8 @@
+0.1.8
+- update dependencies
+- fix #17; alert the user about wrong credentials instead of erroring out
+- fix #8; support redirects (title2 in MediaContainer) - fixes SZ's get my logs
+
 0.1.7
 - update dependencies
 
