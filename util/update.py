@@ -3,7 +3,7 @@
 import traceback
 
 from github import Github, GithubException
-from distutils.version import StrictVersion
+from distutils.version import LooseVersion
 
 
 def _update_check(kitana):
@@ -14,7 +14,7 @@ def _update_check(kitana):
     except GithubException:
         return
 
-    if StrictVersion(kitana.VERSION) < StrictVersion(release.tag_name):
+    if LooseVersion(kitana.VERSION) < LooseVersion(release.tag_name):
         kitana.has_update = release.tag_name
 
 

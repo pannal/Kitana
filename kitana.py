@@ -27,7 +27,7 @@ from tools.urls import BaseUrlOverride
 from tools.cache import BigMemoryCache
 from util.argparse import MultilineFormatter
 from util.messages import message, render_messages
-from util.update import update_check, StrictVersion
+from util.update import update_check, LooseVersion
 from util.sessions import FileSession
 from util.str_util import mask_str, mask_url
 
@@ -59,7 +59,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.1.8"
+    VERSION = "0.1.8-1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -506,7 +506,7 @@ class Kitana(object):
         seen = []
         for msg in self.messages[:]:
             if msg["persistent"] and msg["data"] and "version" in msg["data"]:
-                if StrictVersion(kitana.VERSION) >= StrictVersion(msg["data"]["new_version"]):
+                if LooseVersion(kitana.VERSION) >= LooseVersion(msg["data"]["new_version"]):
                     continue
 
             if msg["text"] not in seen:
@@ -634,7 +634,7 @@ if __name__ == "__main__":
             "tools.sessions.storage_class": FileSession,
             "tools.sessions.storage_path": sessions_dir,
             "tools.sessions.timeout": 525600,
-            "tools.sessions.name": "kitana_session_id",
+            "tools.sessions.name": "kitana_{}_session_id".format(kitana.running_as),
             "tools.sessions.locking": 'early',
             'tools.proxy.on': args.behind_proxy,
             'tools.proxy.local': args.proxy_host_var or "Host",

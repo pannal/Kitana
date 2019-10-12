@@ -1,3 +1,7 @@
+0.1.8-1
+- add distribution namespace to cookies (standalone/git/docker)
+- update version parsing
+
 0.1.8
 - update dependencies
 - fix #17; alert the user about wrong credentials instead of erroring out
