@@ -283,17 +283,19 @@ class Kitana(object):
 
     @property
     def plex_headers(self):
-        return {
-            "X-Plex-Client-Identifier": self.client_identifier,
-            "X-Plex-Product": self.PRODUCT_IDENTIFIER,
-            "X-Plex-Provides": "controller",
-            "X-Plex-Version": self.VERSION,
-            "X-Plex-Platform": platform.system(),
-            "X-Plex-Device": "{} {}".format(platform.system(), platform.release()),
-            "X-Plex-Device-Name": platform.node(),
-            "X-Plex-Platform-Version": platform.release(),
-            'Accept': 'application/json',
-        }
+        return OrderedDict([
+            ("Accept", "application/json"),
+            ("X-Plex-Product", self.PRODUCT_IDENTIFIER),
+            ("X-Plex-Version", self.VERSION),
+            ("X-Plex-Client-Identifier", self.client_identifier),
+            ("X-Plex-Platform", platform.system()),
+            ("X-Plex-Platform-Version", platform.release()),
+            ("X-Plex-Model", self.PRODUCT_IDENTIFIER),
+            ("X-Plex-Device", "{} {}".format(platform.system(), platform.release())),
+            ("X-Plex-Device-Name", "Kitana ({})".format(self.running_as)),
+            ("X-Plex-Device-Screen-Resolution", "1920x1080"),
+            ("X-Plex-Language", "en")]
+        )
 
     @property
     def full_headers(self):

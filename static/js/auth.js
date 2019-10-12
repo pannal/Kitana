@@ -21,6 +21,12 @@ function PopupCenter(url, title, w, h) {
     return newWindow;
 }
 
+function encodeData(data) {
+    return Object.keys(data).map(function(key) {
+        return [key, data[key]].map(encodeURIComponent).join("=");
+    }).join("&");
+}
+
 var plex_oauth_window = null;
 const plex_oauth_loader = '<style>' +
         '.login-loader-container {' +
@@ -71,14 +77,29 @@ function closePlexOAuthWindow() {
 
 getPlexOAuthPin = function () {
     var deferred = $.Deferred();
-    console.log(x_plex_headers);
+    //console.log(x_plex_headers);
 
     $.ajax({
         url: 'https://plex.tv/api/v2/pins?strong=true',
         type: 'POST',
         headers: x_plex_headers,
         success: function(data) {
-            plex_oauth_window.location = 'https://app.plex.tv/auth/#!?clientID=' + x_plex_headers['X-Plex-Client-Identifier'] + '&code=' + data.code;
+            var oauth_params = {
+                'clientID': x_plex_headers['X-Plex-Client-Identifier'],
+                'context[device][product]': x_plex_headers['X-Plex-Product'],
+                'context[device][version]': x_plex_headers['X-Plex-Version'],
+                'context[device][platform]': x_plex_headers['X-Plex-Platform'],
+                'context[device][platformVersion]': x_plex_headers['X-Plex-Platform-Version'],
+                'context[device][device]': x_plex_headers['X-Plex-Device'],
+                'context[device][deviceName]': x_plex_headers['X-Plex-Device-Name'],
+                'context[device][model]': x_plex_headers['X-Plex-Model'],
+                'context[device][screenResolution]': x_plex_headers['X-Plex-Device-Screen-Resolution'],
+                'context[device][layout]': 'desktop',
+                'code': data.code
+            };
+            console.log(oauth_params);
+            plex_oauth_window.location = 'https://app.plex.tv/auth/#!?' + encodeData(oauth_params);
+            console.log(oauth_params);
             deferred.resolve({pin: data.id, code: data.code});
         },
         error: function() {
