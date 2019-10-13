@@ -130,6 +130,8 @@ optional arguments:
                         Connection timeout to the PMS (default: 5)
   -pt PLEXTV_TIMEOUT, --plextv-timeout PLEXTV_TIMEOUT
                         Connection timeout to the Plex.TV API (default: 15)
+  --allow-not-owned [BOOL]
+                        Allow access to not-owned servers? (default: False)
 
 BOOL can be:
 True: "y, yes, t, true, True, on, 1"
