@@ -69,9 +69,10 @@ class Kitana(object):
     running_as = "standalone"
     maintenance_ran = False
     has_update = False
+    only_owned = True
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
-                 language="en"):
+                 language="en", only_owned=True):
         self.initialized = False
         if os.path.exists("/.dockerenv"):
             self.running_as = "docker"
@@ -94,6 +95,7 @@ class Kitana(object):
         self.plextv_timeout = plextv_timeout
         self.req_defaults = {"timeout": self.timeout}
         self.proxy_assets = proxy_assets
+        self.only_owned = only_owned
         self.default_plugin_identifier = plugin_identifier
         self.version_hash = hashlib.md5(self.VERSION.encode("utf-8")).hexdigest()[:7]
         self.initialized = True
@@ -365,6 +367,9 @@ class Kitana(object):
                     continue
 
                 if device["name"] not in servers:
+                    if self.only_owned and not device["owned"] == "1":
+                        continue
+
                     servers[device["name"]] = {"connections": [], "owned": device["owned"] == "1",
                                                "publicAddress": device["publicAddress"],
                                                "publicAddressMatches": public_address_matches}
@@ -599,6 +604,8 @@ if __name__ == "__main__":
                         help="Connection timeout to the PMS (default: 5)")
     parser.add_argument('-pt', '--plextv-timeout', type=int, default=25,
                         help="Connection timeout to the Plex.TV API (default: 15)")
+    parser.add_argument('--allow-not-owned', type=bool, default=False, metavar="BOOL", nargs="?", const=True,
+                        help="Allow access to not-owned servers? (default: False)")
 
     args = parser.parse_args()
     if args.proxy_base and args.proxy_host_var:
@@ -615,7 +622,7 @@ if __name__ == "__main__":
 
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
-                    language=args.plugin_language)
+                    language=args.plugin_language, only_owned=not args.allow_not_owned)
 
     if isWin32:
         args.autoreload = False
