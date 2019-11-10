@@ -1,9 +1,8 @@
 #!/usr/bin/python3
 import hashlib
 import os
+import io
 import platform
-from collections import OrderedDict
-
 import cherrypy
 import requests
 import xmltodict
@@ -14,11 +13,13 @@ import urllib
 import argparse
 import traceback
 
+from collections import OrderedDict
 from cherrypy import HTTPRedirect
+from cherrypy.process.plugins import Monitor
+from cherrypy.lib import static
 from jinja2 import Environment, PackageLoader, select_autoescape
 from urllib.parse import urlparse
 from furl import furl
-from cherrypy.process.plugins import Monitor
 from requests import HTTPError, Timeout
 from distutils.util import strtobool
 
@@ -168,6 +169,27 @@ class Kitana(object):
             redirect = content.get("title2", None)
             # this is basically meant for SZ. title2 can contain a full URL to which we will redirect
             if redirect and self.is_url(redirect):
+                f = furl(redirect)
+
+                # try finding the current PMS in the link
+                is_current_pms = filter(lambda c: c["address"] == f.host or f.host in c["url"], self.connections)
+                if is_current_pms:
+                    # use current PMS connection for the link
+                    con = furl(self.server_addr)
+                    f.host = con.host
+                    f.port = con.port
+                    redirect = f
+                    r = requests.get(f)
+
+                    # special handling for data
+                    if r.headers['content-type'] != 'text/html':
+                        data = io.BytesIO(r.content)
+                        # set headers
+                        for hdr in ("Content-Type", "Content-Disposition", "Content-Length"):
+                            cherrypy.response.headers[hdr] = r.headers[hdr]
+
+                        # serve
+                        return static.serve_fileobj(data)
                 raise cherrypy.HTTPRedirect(redirect)
 
             message("No plugin data returned", "WARNING")
@@ -235,6 +257,16 @@ class Kitana(object):
         if not self.initialized and not value:
             return
         cherrypy.session["username"] = value
+
+    @property
+    def connections(self):
+        return cherrypy.session.get("connections")
+
+    @connections.setter
+    def connections(self, value):
+        if not self.initialized and not value:
+            return
+        cherrypy.session["connections"] = value
 
     @property
     def server_name(self):
@@ -351,6 +383,7 @@ class Kitana(object):
         # import pprint
         # pprint.pprint(content)
         use_connection = None
+        connections = []
         for device in content["MediaContainer"].get("Device", []):
             if device["provides"] != "server" or not bool(device["presence"]):
                 continue
@@ -391,11 +424,13 @@ class Kitana(object):
                         use_connection = connection
 
                     if use_connection:
+                        connections = device["Connection"]
                         break
 
         if server_name and use_connection:
             self.server_name = server_name
             self.connection = use_connection
+            self.connections = connections
             server_addr = use_connection["uri"]
 
             print("Server set to: {}, {}".format(mask_str(server_name), mask_url(server_addr)))
