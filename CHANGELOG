@@ -1,3 +1,6 @@
+0.2.0
+- support proxying url download from title2; fixes #19
+
 0.1.9
 - only allow owned servers by default; can be disabled
 
