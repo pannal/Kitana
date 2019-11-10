@@ -1,5 +1,6 @@
 0.2.0
 - support proxying url download from title2; fixes #19
+- remove specific Dockerfile.armhf; update dockerignore; upgrade cherrypy to 18.4.0, libsass to 0.19.4, pyGitHub to 1.44.1
 
 0.1.9
 - only allow owned servers by default; can be disabled
