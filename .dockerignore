@@ -1,2 +1,4 @@
 data/sessions/*
 static/css/*
+__pycache__/*
+venv/*
