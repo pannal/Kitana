@@ -169,27 +169,28 @@ class Kitana(object):
             redirect = content.get("title2", None)
             # this is basically meant for SZ. title2 can contain a full URL to which we will redirect
             if redirect and self.is_url(redirect):
-                f = furl(redirect)
+                if self.connections:
+                    f = furl(redirect)
 
-                # try finding the current PMS in the link
-                is_current_pms = filter(lambda c: c["address"] == f.host or f.host in c["url"], self.connections)
-                if is_current_pms:
-                    # use current PMS connection for the link
-                    con = furl(self.server_addr)
-                    f.host = con.host
-                    f.port = con.port
-                    redirect = f
-                    r = requests.get(f)
+                    # try finding the current PMS in the link
+                    is_current_pms = filter(lambda c: c["address"] == f.host or f.host in c["url"], self.connections)
+                    if is_current_pms:
+                        # use current PMS connection for the link
+                        con = furl(self.server_addr)
+                        f.host = con.host
+                        f.port = con.port
+                        redirect = f
+                        r = requests.get(f)
 
-                    # special handling for data
-                    if r.headers['content-type'] != 'text/html':
-                        data = io.BytesIO(r.content)
-                        # set headers
-                        for hdr in ("Content-Type", "Content-Disposition", "Content-Length"):
-                            cherrypy.response.headers[hdr] = r.headers[hdr]
+                        # special handling for data
+                        if r.headers['content-type'] != 'text/html':
+                            data = io.BytesIO(r.content)
+                            # set headers
+                            for hdr in ("Content-Type", "Content-Disposition", "Content-Length"):
+                                cherrypy.response.headers[hdr] = r.headers[hdr]
 
-                        # serve
-                        return static.serve_fileobj(data)
+                            # serve
+                            return static.serve_fileobj(data)
                 raise cherrypy.HTTPRedirect(redirect)
 
             message("No plugin data returned", "WARNING")
