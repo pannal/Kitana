@@ -3,5 +3,5 @@ requests==2.22.0
 xmltodict==0.12.0
 libsass==0.19.4
 jinja2==2.10.3
-pyGitHub==1.44.1
+pyGitHub==1.45
 furl==2.1.0
