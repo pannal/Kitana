@@ -1,4 +1,4 @@
-cherrypy==18.4.0
+cherrypy==18.5.0
 requests==2.22.0
 xmltodict==0.12.0
 libsass==0.19.4
