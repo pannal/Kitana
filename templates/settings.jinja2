@@ -1,0 +1,66 @@
+{% extends "base.jinja2" %}
+{% block content_class %}settings{% endblock %}
+{% block content %}
+    {% set item_count = namespace(a=0) %}
+    <div class="plugin_content">
+        <div class="row">
+            <div class="col-12">
+                <nav>
+                    <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                        <a class="nav-item nav-link active bg-dark text-white" id="nav-default-tab" data-toggle="tab"
+                           href="#nav-default"
+                           role="tab" aria-controls="nav-default" aria-selected="true">Default</a>
+                    </div>
+                </nav>
+                <div class="tab-content" id="nav-tabContent">
+                    <div class="tab-pane fade show active" id="nav-default" role="tabpanel"
+                         aria-labelledby="nav-default-tab">
+                        <form method="post">
+                            {% for d in items %}
+                                {% set item_count.a = item_count.a + 1 %}
+                                <div class="form-group">
+                                    {% if d.type == "text" %}
+                                        <label for="set-{{ d.id }}" class="text-white">{{ d.label }}</label>
+                                        <input type="{% if d.secure == "true" %}password{% else %}text{% endif %}"
+                                               class="form-control bg-dark text-light" id="set-{{ d.id }}" name="{{ d.id }}"
+                                               value="{% if d.value %}{{ d.value }}{% else %}{{ d.default }}{% endif %}">
+                                    {% elif d.type == "bool" %}
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input bg-dark text-light" id="set-{{ d.id }}" name="{{ d.id }}"{% if d.value == "true" %} checked{% endif %}>
+                                            <label class="custom-control-label text-white" for="set-{{ d.id }}">{{ d.label }}</label>
+                                        </div>
+                                    {% elif d.type == "enum" %}
+                                        <label for="set-{{ d.id }}" class="text-white">{{ d.label }}</label>
+                                        <select class="form-control bg-dark text-light" id="et-{{ d.id }}" name="{{ d.id }}">
+                                            {% for opt in d["values"].split("|") %}
+                                                <option value="{{ loop.index0 }}"{% if loop.index0|string == d.value %} selected{% endif %}>{{ opt }}</option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                            <button type="submit" class="btn btn-primary btn-block">Save settings</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-8"><p class="title">Plugin Settings <span
+                    class="badge badge-dark">{{ item_count.a }}</span></p></div>
+
+            <div class="col-4 align-right">
+                <div class="float-right">
+                    <a href="about:blank" title="Restart Plugin" class="ml-2">
+                        <span class="oi oi-loop-circular"></span>
+                    </a>
+                    {% if plugin.hasPrefs %}
+                        <a href="{{ url("/plugin_prefs") }}" title="Settings" class="ml-2">
+                            <span class="oi oi-cog"></span>
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

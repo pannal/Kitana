@@ -1,13 +1,19 @@
+$font-size-base:              1rem
+
 @import bootstrap/functions
-@import bootstrap/variables
-
-$dropdown-bg:                       $dark
-$dropdown-link-color:               $gray-400
-$dropdown-link-hover-color:         $gray-400
-$dropdown-link-hover-bg:            $gray-900
-$dropdown-link-active-bg:           $gray-700
-$dropdown-link-active-color:        $gray-200
-
+@import darkly/variables
+$light: darken($white, 15%)
 @import bootstrap/bootstrap
+@import darkly/bootswatch
 @import iconic/css/open-iconic-bootstrap
+
+$link-color:                $white
+$link-hover-color: darken($white, 50%)
+//$dropdown-bg:                       $dark
+//$dropdown-link-color:               $gray-400
+//$dropdown-link-hover-color:         $gray-400
+//$dropdown-link-hover-bg:            $gray-900
+//$dropdown-link-active-bg:           $gray-700
+//$dropdown-link-active-color:        $gray-200
+
 @import base

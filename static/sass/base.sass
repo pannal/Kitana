@@ -1,5 +1,5 @@
 @import bootstrap/functions
-@import bootstrap/variables
+@import darkly/variables
 
 body
   background-color: #0e0e0e
@@ -17,7 +17,7 @@ $maxWidth: 1140px
   z-index: 0
   margin-top: 16px
 
-  &.index
+  &.index, &.settings
     .plugin_content
       display: flex
       flex-direction: column-reverse
@@ -51,12 +51,15 @@ $bgOpacity: opacity(30%)
 
 #content
   max-width: $maxWidth
-  a, a:hover, a:link, a:visited
-    color: lighten($link-color, 45%)
+  a, a:link, a:visited
+    color: $link-color
+
+  a:hover, a:active
+    color: darken($link-color, 25%)
     text-decoration: none
 
   a:active
-    color: lighten($link-color, 90%)
+    color: darken($link-color, 50%)
 
   div
     box-sizing: border-box
@@ -95,6 +98,9 @@ $bgOpacity: opacity(30%)
         justify-content: flex-start
         align-items: stretch
         flex-direction: row
+
+        &:hover
+          color: $link-color
 
         @media (max-width: $vertBreaker)
           //flex-direction: column

@@ -38,6 +38,7 @@ env = Environment(
 )
 
 template = env.get_template('index.jinja2')
+settings_template = env.get_template('settings.jinja2')
 isWin32 = os.name == "nt"
 
 
@@ -60,7 +61,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.2.0"
+    VERSION = "0.3.0"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -71,14 +72,11 @@ class Kitana(object):
     maintenance_ran = False
     has_update = False
     only_owned = True
+    version_hash = hashlib.md5(VERSION.encode("utf-8")).hexdigest()[:7]
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
                  language="en", only_owned=True):
         self.initialized = False
-        if os.path.exists("/.dockerenv"):
-            self.running_as = "docker"
-        elif os.path.exists(".git"):
-            self.running_as = "git"
 
         self.prefix = prefix
         self.has_update = False
@@ -98,12 +96,21 @@ class Kitana(object):
         self.proxy_assets = proxy_assets
         self.only_owned = only_owned
         self.default_plugin_identifier = plugin_identifier
-        self.version_hash = hashlib.md5(self.VERSION.encode("utf-8")).hexdigest()[:7]
         self.initialized = True
 
+    @classmethod
+    def get_running_as(cls):
+        if os.path.exists("/.dockerenv"):
+            return "docker"
+        elif os.path.exists(".git"):
+            return "git"
+
     def template_url(self, url, **kw):
+        if not url:
+            return
+
         has_query = bool(urlparse(url).query)
-        if url.startswith("/:") or url.startswith("/library"):
+        if (url.startswith("/:") and not url.endswith("/prefs")) or url.startswith("/library"):
             if self.proxy_assets:
                 url = cherrypy.url("/pms_asset",
                                    qs={"url": urllib.parse.quote_plus(url[1:] if url.startswith("/") else url)})
@@ -137,27 +144,31 @@ class Kitana(object):
         except ValueError:
             return False
 
-    def plex_dispatch(self, path):
+    def _dispatch(self, path, data=None):
         headers = {
             "X-Plex-Token": self.plex_token,
             "X-Plex-Language": self.language,
         }
-        r = self.session.get(self.server_addr + path, headers=headers, **self.req_defaults)
+        r = self.session.get(self.server_addr + path, headers=headers, params=data, **self.req_defaults)
         r.raise_for_status()
+        return r
+
+    def plex_dispatch(self, path):
+        r = self._dispatch(path)
 
         content = xmltodict.parse(r.content, attr_prefix="", force_list=("Video", "Directory"))
         return content["MediaContainer"]
 
-    def merge_plugin_data(self, data):
+    def merge_plugin_data(self, data, keys=("Video", "Directory")):
         out = []
-        keys = ["Video", "Directory"]
         for key in keys:
             if key in data and data[key]:
                 out += data[key]
+            data[key] = None
 
         return out
 
-    def render_plugin(self, path):
+    def render_plugin(self, path, template=template, merge_item_keys=("Video", "Directory"), only_return_items=False):
         content = self.plex_dispatch(path)
 
         try:
@@ -198,9 +209,9 @@ class Kitana(object):
             self.plugin = None
             raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
-        items = self.merge_plugin_data(content)
-        content["Directory"] = None
-        content["Video"] = None
+        items = self.merge_plugin_data(content, keys=merge_item_keys)
+        if only_return_items:
+            return items
 
         return template.render(data=content, items=items, **self.default_context)
 
@@ -558,6 +569,41 @@ class Kitana(object):
 
         self.messages = messages
 
+    @staticmethod
+    def normalize_post_ret_value(val):
+        if val in ("on", True):
+            return "true"
+        elif val in (None,):
+            return "false"
+        return val
+
+    @cherrypy.expose()
+    def plugin_prefs(self, *args, **kwargs):
+        self.ensure_pms_data()
+        url = ":/plugins/{}/prefs".format(self.plugin["identifier"])
+        if cherrypy.request.method == "POST":
+            items = self.render_plugin(url, settings_template, merge_item_keys=("Setting",), only_return_items=True)
+            diff = {}
+            for item in items:
+                new_val = Kitana.normalize_post_ret_value(kwargs.get(item["id"]))
+                if item["value"] != new_val:
+                    diff[item["id"]] = new_val
+            if diff:
+                path = "{}/:/prefs/set".format(self.plugin["key"][1:])
+                r = self._dispatch(path, data=diff)
+                if r.status_code == 200:
+                    message("Settings saved", "SUCCESS")
+                else:
+                    message("Something went wrong", "ERROR")
+                raise cherrypy.HTTPRedirect(cherrypy.url("/"))
+            else:
+                print("No changed settings")
+                message("No settings have been changed", "SECONDARY")
+                raise cherrypy.HTTPRedirect(cherrypy.url("/"))
+        else:
+            return self.render_plugin(url, settings_template, merge_item_keys=("Setting",))
+
+
     @cherrypy.expose
     @cherrypy.tools.maintenance()
     def default(self, *args, **kwargs):
@@ -656,10 +702,6 @@ if __name__ == "__main__":
 
     prefix = args.prefix
 
-    kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
-                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
-                    language=args.plugin_language, only_owned=not args.allow_not_owned)
-
     if isWin32:
         args.autoreload = False
 
@@ -675,15 +717,6 @@ if __name__ == "__main__":
             'server.socket_host': host,
             'server.socket_port': int(port),
             'engine.autoreload.on': args.autoreload,
-            "tools.sessions.on": True,
-            "tools.sessions.storage_class": FileSession,
-            "tools.sessions.storage_path": sessions_dir,
-            "tools.sessions.timeout": 525600,
-            "tools.sessions.name": "kitana_{}_session_id".format(kitana.running_as),
-            "tools.sessions.locking": 'early',
-            'tools.proxy.on': args.behind_proxy,
-            'tools.proxy.local': args.proxy_host_var or "Host",
-            'tools.proxy.base': args.proxy_base,
             'log.screen': True,
         }
     )
@@ -701,6 +734,14 @@ if __name__ == "__main__":
     conf = {
         "/": {
             "tools.sessions.on": True,
+            "tools.sessions.storage_class": FileSession,
+            "tools.sessions.storage_path": sessions_dir,
+            "tools.sessions.timeout": 525600,
+            "tools.sessions.name": "kitana_{}_session_id".format(Kitana.get_running_as()),
+            "tools.sessions.locking": 'early',
+            'tools.proxy.on': args.behind_proxy,
+            'tools.proxy.local': args.proxy_host_var or "Host",
+            'tools.proxy.base': args.proxy_base,
             # 'tools.staticdir.root': os.path.abspath(os.getcwd())
         },
         '/static': {
@@ -742,7 +783,7 @@ if __name__ == "__main__":
     # add handlers for version-hash based assets
     for versioned_asset in ("css/main.css", "js/auth.js"):
         base, ext = os.path.splitext(versioned_asset)
-        key = "/static/{}.{}{}".format(base, kitana.version_hash, ext)
+        key = "/static/{}.{}{}".format(base, Kitana.version_hash, ext)
         conf.update(
             {
                 key: dict(versioned_asset_base_conf,
@@ -751,6 +792,14 @@ if __name__ == "__main__":
             }
         )
 
+    kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
+                    plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
+                    language=args.plugin_language, only_owned=not args.allow_not_owned)
+
+    cherrypy.tree.mount(kitana, prefix, conf)
+    cherrypy.engine.start()
+    cherrypy.engine.publish('compile_sass')
+
     env.globals['url'] = kitana.template_url
     env.globals['static'] = kitana.static_url
     env.globals["render_messages"] = render_messages
@@ -758,10 +807,6 @@ if __name__ == "__main__":
     if kitana.running_as != "git":
         Monitor(cherrypy.engine, lambda: update_check(kitana), frequency=3600 * 6, name="UpdateCheck").subscribe()
         update_check(kitana)
-
-    cherrypy.engine.start()
-    cherrypy.engine.publish('compile_sass')
-    cherrypy.tree.mount(kitana, prefix, conf)
 
     cherrypy.engine.signals.subscribe()
     cherrypy.engine.block()
