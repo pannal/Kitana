@@ -75,7 +75,7 @@ class Kitana(object):
     version_hash = hashlib.md5(VERSION.encode("utf-8")).hexdigest()[:7]
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
-                 language="en", only_owned=True):
+                 language="en", only_owned=True, running_as="standalone"):
         self.initialized = False
 
         self.prefix = prefix
@@ -96,6 +96,7 @@ class Kitana(object):
         self.proxy_assets = proxy_assets
         self.only_owned = only_owned
         self.default_plugin_identifier = plugin_identifier
+        self.running_as = running_as
         self.initialized = True
 
     @classmethod
@@ -104,6 +105,7 @@ class Kitana(object):
             return "docker"
         elif os.path.exists(".git"):
             return "git"
+        return "standalone"
 
     def template_url(self, url, **kw):
         if not url:
@@ -805,7 +807,8 @@ if __name__ == "__main__":
 
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
-                    language=args.plugin_language, only_owned=not args.allow_not_owned)
+                    language=args.plugin_language, only_owned=not args.allow_not_owned,
+                    running_as=Kitana.get_running_as())
 
     cherrypy.tree.mount(kitana, prefix, conf)
     cherrypy.engine.start()
