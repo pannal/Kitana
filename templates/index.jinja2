@@ -44,7 +44,7 @@
                 <div class="col-4 align-right">
                     <div class="float-right">
                         {% block plugin_pills_content %}
-                        <a href="about:blank" title="Restart Plugin" class="ml-2">
+                        <a href="{{ url("/plugin_restart") }}" title="Restart Plugin" class="ml-2">
                             <span class="oi oi-loop-circular"></span>
                         </a>
                         {% if plugin.hasPrefs %}

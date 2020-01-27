@@ -61,7 +61,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.3.0"
+    VERSION = "0.3.1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -602,6 +602,17 @@ class Kitana(object):
                 raise cherrypy.HTTPRedirect(cherrypy.url("/"))
         else:
             return self.render_plugin(url, settings_template, merge_item_keys=("Setting",))
+
+    @cherrypy.expose
+    def plugin_restart(self, *args, **kwargs):
+        self.ensure_pms_data()
+        path = ":/plugins/{}/restart".format(self.plugin["identifier"])
+        r = self._dispatch(path)
+        if r.status_code == 200:
+            message("Plugin restart triggered", "SUCCESS")
+        else:
+            message("Something went wrong when trying to restart the plugin", "ERROR")
+        raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
 
     @cherrypy.expose
