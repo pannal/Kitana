@@ -1,3 +1,15 @@
+0.3.1
+- finalize plugin settings handler
+- add plugin restart functionality
+
+0.3.0
+- don't error on inexistant self.connections
+- update bootstrap to 4.4.1
+- add iconic 1.1.0
+- upgrade cherrypy to 18.5.0
+- update pyGitHub to 1.45
+- add first plugin settings handler
+
 0.2.0
 - support proxying url download from title2; fixes #19
 - remove specific Dockerfile.armhf; update dockerignore; upgrade cherrypy to 18.4.0, libsass to 0.19.4, pyGitHub to 1.44.1
