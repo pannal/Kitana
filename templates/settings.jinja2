@@ -1,8 +1,6 @@
-{% extends "base.jinja2" %}
+{% extends "index.jinja2" %}
 {% block content_class %}settings{% endblock %}
-{% block content %}
-    {% set item_count = namespace(a=0) %}
-    <div class="plugin_content">
+{% block plugin_content %}
         <div class="row">
             <div class="col-12">
                 <nav>
@@ -12,7 +10,7 @@
                            role="tab" aria-controls="nav-default" aria-selected="true">Default</a>
                     </div>
                 </nav>
-                <div class="tab-content" id="nav-tabContent">
+                <div class="tab-content pt-4" id="nav-tabContent">
                     <div class="tab-pane fade show active" id="nav-default" role="tabpanel"
                          aria-labelledby="nav-default-tab">
                         <form method="post">
@@ -45,22 +43,6 @@
                 </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-8"><p class="title">Plugin Settings <span
-                    class="badge badge-dark">{{ item_count.a }}</span></p></div>
-
-            <div class="col-4 align-right">
-                <div class="float-right">
-                    <a href="about:blank" title="Restart Plugin" class="ml-2">
-                        <span class="oi oi-loop-circular"></span>
-                    </a>
-                    {% if plugin.hasPrefs %}
-                        <a href="{{ url("/plugin_prefs") }}" title="Settings" class="ml-2">
-                            <span class="oi oi-cog"></span>
-                        </a>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-    </div>
 {% endblock %}
+
+{% block plugin_title %}Plugin Settings{% endblock %}

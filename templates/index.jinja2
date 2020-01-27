@@ -3,52 +3,60 @@
 {% block content %}
     {% set item_count = namespace(a=0) %}
     <div class="plugin_content">
-        <div class="row">
-            <div class="col-12">
-                <ul>
-                    {% for d in items %}
-                        {% if not d.settings and (d.key or d.url) %}
-                            {% set item_count.a = item_count.a + 1 %}
-                            {% set uri_external = False %}
-                            {% if d.url %}
-                                {% set uri = d.url if d.url else url(d.key) %}
-                                {% set uri_external = True %}
-                            {% else %}
-                                {% set uri = url(d.key) %}
+        {% block plugin_content scoped %}
+            <div class="row">
+                <div class="col-12">
+                    <ul>
+                        {% for d in items %}
+                            {% if not d.settings and (d.key or d.url) %}
+                                {% set item_count.a = item_count.a + 1 %}
+                                {% set uri_external = False %}
+                                {% if d.url %}
+                                    {% set uri = d.url if d.url else url(d.key) %}
+                                    {% set uri_external = True %}
+                                {% else %}
+                                    {% set uri = url(d.key) %}
+                                {% endif %}
+                                {% if d.title and d.title.startswith("http") %}
+                                    {% set uri = d.title %}
+                                    {% set uri_external = True %}
+                                {% endif %}
+                                <li>
+                                    <a href="{{ uri }}"{% if uri_external %} target="_blank"{% endif %}>
+                                        <div class="thumb">{% if d.thumb %}
+                                            <img src="{{ url(d.thumb) }}" class="rounded-left"/>{% endif %}</div>
+                                        <div class="title">{{ d.title.strip() }}</div>
+                                        <div class="summary">{{ d.summary }}</div>
+                                    </a>
+                                </li>
                             {% endif %}
-                            {% if d.title and d.title.startswith("http") %}
-                                {% set uri = d.title %}
-                                {% set uri_external = True %}
-                            {% endif %}
-                            <li>
-                                <a href="{{ uri }}"{% if uri_external %} target="_blank"{% endif %}>
-                                    <div class="thumb">{% if d.thumb %}
-                                        <img src="{{ url(d.thumb) }}" class="rounded-left"/>{% endif %}</div>
-                                    <div class="title">{{ d.title.strip() }}</div>
-                                    <div class="summary">{{ d.summary }}</div>
-                                </a>
-                            </li>
-                        {% endif %}
-                    {% endfor %}
-                </ul>
-            </div>
-        </div>
-        <div class="row">
-            <div class="col-8"><p class="title">{{ data.title1 or data.title2 or data.sourceTitle }} <span
-                    class="badge badge-dark">{{ item_count.a }}</span></p></div>
-
-            <div class="col-4 align-right">
-                <div class="float-right">
-                    <a href="about:blank" title="Restart Plugin" class="ml-2">
-                        <span class="oi oi-loop-circular"></span>
-                    </a>
-                    {% if plugin.hasPrefs %}
-                        <a href="{{ url("/plugin_prefs") }}" title="Settings" class="ml-2">
-                            <span class="oi oi-cog"></span>
-                        </a>
-                    {% endif %}
+                        {% endfor %}
+                    </ul>
                 </div>
             </div>
-        </div>
+        {% endblock %}
+        {% block plugin_header scoped %}
+            <div class="row">
+                <div class="col-8"><p class="title">{% block plugin_title %}{{ data.title1 or data.title2 or data.sourceTitle }}{% endblock %} <span
+                        class="badge badge-dark">{{ item_count.a }}</span></p></div>
+
+                {% block plugin_pills %}
+                <div class="col-4 align-right">
+                    <div class="float-right">
+                        {% block plugin_pills_content %}
+                        <a href="about:blank" title="Restart Plugin" class="ml-2">
+                            <span class="oi oi-loop-circular"></span>
+                        </a>
+                        {% if plugin.hasPrefs %}
+                            <a href="{{ url("/plugin_prefs") }}" title="Settings" class="ml-2">
+                                <span class="oi oi-cog"></span>
+                            </a>
+                        {% endif %}
+                        {% endblock %}
+                    </div>
+                </div>
+                {% endblock %}
+            </div>
+        {% endblock %}
     </div>
 {% endblock %}
