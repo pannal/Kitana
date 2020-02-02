@@ -1,3 +1,6 @@
+0.3.1-3
+- fix proxy base handling (#28)
+
 0.3.1-2
 - add title (thanks @Cyb3rGh05t)
 
