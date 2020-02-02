@@ -753,7 +753,7 @@ if __name__ == "__main__":
             "tools.sessions.name": "kitana_{}_session_id".format(Kitana.get_running_as()),
             "tools.sessions.locking": 'early',
             'tools.proxy.on': args.behind_proxy,
-            'tools.proxy.local': args.proxy_host_var or "Host",
+            'tools.proxy.local': (args.proxy_host_var or "Host") if not args.proxy_base else None,
             'tools.proxy.base': args.proxy_base,
             # 'tools.staticdir.root': os.path.abspath(os.getcwd())
         },
