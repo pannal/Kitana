@@ -42,17 +42,17 @@ Also, it isn't designed to. Kitana is an intermediate solution to the recent pro
 ### Docker (the easy way, Windows included)
 Install [Docker](https://docs.docker.com/install/#supported-platforms)
 
-##### Standalone
+#### Standalone
 This launches Kitana on port 31337:
 - ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 0.0.0.0:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337```
 
-##### Mount behind a reverse proxy (example: NGINX)
+#### Mount behind a reverse proxy (example: NGINX)
 - ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -P```
 
-##### Mount on /kitana and behind a reverse proxy (example: NGINX)
+#### Mount on /kitana and behind a reverse proxy (example: NGINX)
 - ```docker run --name kitana --restart unless-stopped -v kitana_data:/app/data -d -p 127.0.0.1:31337:31337 pannal/kitana:latest -B 0.0.0.0:31337 -p /kitana -P```
 
-##### Upgrading
+#### Upgrading
 - `docker stop kitana && docker rm kitana && docker pull pannal/kitana:latest`, then re-run it with the command above
 
 ### Manual installation
@@ -66,7 +66,7 @@ Installation:
 Running:
 - `python kitana.py`
 
-##### Windows
+#### Windows
 - install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
 - `pip3.5 install -r requirements_win32.txt`
 
@@ -79,6 +79,8 @@ Running behind IIS:
 ## Deployment
 I've included [sample configs](https://github.com/pannal/Kitana/tree/master/deployment) for running Kitana using supervisord, and an NGINX reverse-proxy sample config you can use.
 
+#### Portainer
+- https://github.com/pannal/Kitana/issues/26#issuecomment-570200679
 
 ## Usage
 - run kitana (see above)
