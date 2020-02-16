@@ -61,7 +61,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.3.1-3"
+    VERSION = "0.3.1-4"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -645,6 +645,8 @@ class Kitana(object):
             else:
                 message("Timeout on {}".format(self.server_name), "WARNING")
 
+            message("Error on {} (see log): {}".format(self.server_name, e), "ERROR")
+            traceback.print_exc()
             print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
                                                                                          mask_str(self.server_name)))
             return self.discover_pms(self.server_name)
