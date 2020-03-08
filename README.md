@@ -61,10 +61,10 @@ Requirements:
 
 Installation:
 - go to the Kitana folder
-- `pip install -r requirements.txt`
+- `pip3 install -r requirements.txt`
 
 Running:
-- `python kitana.py`
+- `python3 kitana.py`
 
 #### Windows
 - install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
