@@ -399,26 +399,26 @@ class Kitana(object):
         use_connection = None
         connections = []
         for device in content["MediaContainer"].get("Device", []):
-            if device.get("provides") != "server" or not bool(device.get("presence")):
+            if device["provides"] != "server" or not bool(device["presence"]):
                 continue
 
-            public_address_matches = device.get("publicAddressMatches", "0") == "1"
-            https_required = device.get("httpsRequired", "0") == "1"
+            public_address_matches = device["publicAddressMatches"] == "1"
+            https_required = device["httpsRequired"] == "1"
 
-            for connection in device.get("Connection", []):
+            for connection in device["Connection"]:
                 connection["unavailable"] = False
-                if not public_address_matches and connection.get("local", "0") == "1":
+                if not public_address_matches and connection["local"] == "1":
                     continue
 
-                elif https_required and connection.get("protocol", "http") != "https":
+                elif https_required and connection["protocol"] != "https":
                     continue
 
                 if device["name"] not in servers:
-                    if self.only_owned and not device.get("owned", "0") == "1":
+                    if self.only_owned and not device["owned"] == "1":
                         continue
 
-                    servers[device["name"]] = {"connections": [], "owned": device.get("owned", "0") == "1",
-                                               "publicAddress": device.get("publicAddress", None),
+                    servers[device["name"]] = {"connections": [], "owned": device["owned"] == "1",
+                                               "publicAddress": device["publicAddress"],
                                                "publicAddressMatches": public_address_matches}
 
                 if blacklist_addr and connection["uri"] in blacklist_addr:
