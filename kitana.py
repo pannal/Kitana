@@ -403,7 +403,7 @@ class Kitana(object):
                 continue
 
             public_address_matches = device["publicAddressMatches"] == "1"
-            https_required = device["httpsRequired"] == "1"
+            https_required = "httpsRequired" in device and device["httpsRequired"] == "1"
 
             for connection in device["Connection"]:
                 connection["unavailable"] = False
