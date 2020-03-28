@@ -1,7 +1,8 @@
 cherrypy==18.5.0
-requests==2.22.0
+requests==2.23.0
 xmltodict==0.12.0
 libsass==0.19.4
-jinja2==2.10.3
-pyGitHub==1.45
+jinja2==2.11.1
+pyGitHub==1.47
 furl==2.1.0
+ndg-httpsclient==0.5.1
