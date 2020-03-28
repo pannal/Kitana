@@ -1,3 +1,7 @@
+0.3.2
+- update dependencies
+- support relay connections
+
 0.3.1-5
 - fix restart icon/glyph to better represent what it does (#32)
 - fix inexistant httpsRequired (#33)

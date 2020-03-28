@@ -9,6 +9,7 @@ RUN apt-get update \
         apt-utils \
         gcc \
         g++ \
+        libffi-dev libssl-dev python3-dev \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -16,7 +17,7 @@ COPY requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt \
-    && apt-get purge -y --auto-remove gcc g++
+    && apt-get purge -y --auto-remove gcc g++ libffi-dev libssl-dev python3-dev
 
 # Copy the current directory contents into the container at /app
 COPY . /app
