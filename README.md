@@ -55,6 +55,21 @@ This launches Kitana on port 31337:
 #### Upgrading
 - `docker stop kitana && docker rm kitana && docker pull pannal/kitana:latest`, then re-run it with the command above
 
+### Docker-compose
+```
+  kitana:
+    image: pannal/kitana:latest
+    container_name: kitana
+    volumes:
+      - /FOLDER/TO/KITANA:/app/data
+    ports:
+      - 31337:31337
+    links:
+      - plex
+    command: -B 0.0.0.0:31337 -p /kitana -P
+    restart: unless-stopped
+```
+
 ### Manual installation
 Requirements:
 - Python3.5
