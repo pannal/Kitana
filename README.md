@@ -61,7 +61,7 @@ This launches Kitana on port 31337:
     image: pannal/kitana:latest
     container_name: kitana
     volumes:
-      - /FOLDER/TO/KITANA:/app/data
+      - /FOLDER/TO/KITANA_DATA:/app/data
     ports:
       - 31337:31337
     links:
