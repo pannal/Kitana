@@ -61,7 +61,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.3.3a"
+    VERSION = "0.3.3"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -72,10 +72,11 @@ class Kitana(object):
     maintenance_ran = False
     has_update = False
     only_owned = True
+    global_token = False
     version_hash = hashlib.md5(VERSION.encode("utf-8")).hexdigest()[:7]
 
     def __init__(self, prefix="/", timeout=5, plextv_timeout=15, proxy_assets=True, plugin_identifier=None,
-                 language="en", only_owned=True, running_as="standalone"):
+                 language="en", only_owned=True, global_token=None, running_as="standalone"):
         self.initialized = False
 
         self.prefix = prefix
@@ -97,6 +98,7 @@ class Kitana(object):
         self.only_owned = only_owned
         self.default_plugin_identifier = plugin_identifier
         self.running_as = running_as
+        self.global_token = global_token
         self.initialized = True
 
     @classmethod
@@ -220,7 +222,7 @@ class Kitana(object):
     @property
     def default_context(self):
         return {
-            "logged_in": bool(cherrypy.session.get("plex_token")),
+            "logged_in": bool(self.global_token or cherrypy.session.get("plex_token")),
             "username": cherrypy.session.get("username"),
             "server_name": cherrypy.session.get("server_name"),
             "connection": cherrypy.session.get("connection"),
@@ -250,6 +252,8 @@ class Kitana(object):
 
     @property
     def plex_token(self):
+        if self.global_token:
+            return self.global_token
         token = cherrypy.session.get("plex_token")
         if not token:
             print("No token, redirecting")
@@ -683,6 +687,9 @@ if __name__ == "__main__":
     parser.add_argument('-P', '--behind-proxy', type=bool, default=False, nargs="?", const=True, metavar="BOOL",
                         help="Assume being ran behind a reverse proxy (default: False)")
 
+    parser.add_argument('-A', '--global-token', type=str, default=None,
+                        metavar="GLOBAL_AUTH_TOKEN",
+                        help="Token to access Plex. Can be the name of an environment variable.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host", metavar="PROXY_HOST_VAR",
                        help="When behind reverse proxy, get host from this var "
@@ -807,10 +814,17 @@ if __name__ == "__main__":
             }
         )
 
+    global_token = None
+    if args.global_token:
+        tok_or_key = args.global_token
+        if tok_or_key in os.environ:
+            tok_or_key = os.environ.get(tok_or_key, tok_or_key)
+        global_token = tok_or_key
+
     kitana = Kitana(prefix=prefix, proxy_assets=args.shadow_assets, timeout=args.timeout,
                     plextv_timeout=args.plextv_timeout, plugin_identifier=args.plugin_identifier,
                     language=args.plugin_language, only_owned=not args.allow_not_owned,
-                    running_as=Kitana.get_running_as())
+                    global_token=global_token, running_as=Kitana.get_running_as())
 
     cherrypy.tree.mount(kitana, prefix, conf)
     cherrypy.engine.start()
