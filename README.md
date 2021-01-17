@@ -130,6 +130,9 @@ optional arguments:
   -P [BOOL], --behind-proxy [BOOL]
                         Assume being ran behind a reverse proxy (default:
                         False)
+  -A GLOBAL_AUTH_TOKEN, --global-token GLOBAL_AUTH_TOKEN
+                        Token to access Plex. Can be the name of an
+                        environment variable.
   -PH [PROXY_HOST_VAR], --proxy-host-var [PROXY_HOST_VAR]
                         When behind reverse proxy, get host from this var
                         (NGINX: "Host", Squid: "Origin", Lighty/Apache:

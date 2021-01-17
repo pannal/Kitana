@@ -1,3 +1,9 @@
+0.3.3
+- update dependencies
+- use python 3.5 explicitly
+- support -A allowing a global Plex token to be supplied via command line or environment variable name, fully supporting "no-login"-mode without the need to authenticate.
+- possibly fix #50
+
 0.3.2
 - update dependencies
 - support relay connections
