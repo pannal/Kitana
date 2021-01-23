@@ -132,7 +132,7 @@ optional arguments:
                         False)
   -A GLOBAL_AUTH_TOKEN, --global-token GLOBAL_AUTH_TOKEN
                         Token to access Plex. Can be the name of an
-                        environment variable containing the token.Overrides
+                        environment variable containing the token. Overrides
                         and disables any and all authentication. Effectively
                         enables local mode.
   -PH [PROXY_HOST_VAR], --proxy-host-var [PROXY_HOST_VAR]
