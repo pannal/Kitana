@@ -1,3 +1,7 @@
+0.3.3-1
+- downgrade dependency pyGitHub to 1.54 as its previous requirement couldn't be satisfied in 0.3.3 for Python 3.5
+- last Python 3.5 release
+
 0.3.3
 - update dependencies
 - use python 3.5 explicitly
