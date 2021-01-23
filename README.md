@@ -72,21 +72,21 @@ This launches Kitana on port 31337:
 
 ### Manual installation
 Requirements:
-- Python3.5
+- Python3.7
 
 Installation:
 - go to the Kitana folder
-- `pip3 install -r requirements.txt`
+- `pip3.7 install -r requirements.txt`
 
 Running:
-- `python3 kitana.py`
+- `python3.7 kitana.py`
 
 #### Windows
-- install Python 3.5 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
-- `pip3.5 install -r requirements_win32.txt`
+- install Python 3.7 (preferrably [ActivePython](https://www.activestate.com/activepython/downloads))
+- `pip3.7 install -r requirements_win32.txt`
 
 Running:
-- `python3.5 kitana.py` (Note: asset proxying seems slow on win32, adding `--shadow-assets=False` is advised)
+- `python3.7 kitana.py` (Note: asset proxying seems slow on win32, adding `--shadow-assets=False` is advised)
 
 Running behind IIS:
 - `%windir%\system32\inetsrv\appcmd.exe set config -section:system.webServer/proxy -preserveHostHeader:true /commit:apphost` ([Stackoverflow](https://stackoverflow.com/a/14842856))
