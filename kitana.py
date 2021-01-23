@@ -689,7 +689,8 @@ if __name__ == "__main__":
 
     parser.add_argument('-A', '--global-token', type=str, default=None,
                         metavar="GLOBAL_AUTH_TOKEN",
-                        help="Token to access Plex. Can be the name of an environment variable.")
+                        help="Token to access Plex. Can be the name of an environment variable containing the token."
+                             "Overrides and disables any and all authentication. Effectively enables local mode.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host", metavar="PROXY_HOST_VAR",
                        help="When behind reverse proxy, get host from this var "
