@@ -634,7 +634,7 @@ class Kitana(object):
 
         try:
             return self.render_plugin(path)
-        except (HTTPError, Timeout) as e:
+        except (HTTPError, Timeout, requests.exceptions.SSLError) as e:
             if isinstance(e, HTTPError):
                 if e.response.status_code == 401:
                     message("Access denied on {}".format(self.server_name), "ERROR")
@@ -690,7 +690,7 @@ if __name__ == "__main__":
     parser.add_argument('-A', '--global-token', type=str, default=None,
                         metavar="GLOBAL_AUTH_TOKEN",
                         help="Token to access Plex. Can be the name of an environment variable containing the token."
-                             "Overrides and disables any and all authentication. Effectively enables local mode.")
+                             " Overrides and disables any and all authentication. Effectively enables local mode.")
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-PH', '--proxy-host-var', type=str, nargs='?', const="Host", metavar="PROXY_HOST_VAR",
                        help="When behind reverse proxy, get host from this var "
