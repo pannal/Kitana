@@ -635,7 +635,7 @@ class Kitana(object):
         try:
             return self.render_plugin(path)
         except (HTTPError, Timeout, requests.exceptions.SSLError) as e:
-            if isinstance(e, HTTPError):
+            if not isinstance(e, Timeout):
                 if e.response.status_code == 401:
                     message("Access denied on {}".format(self.server_name), "ERROR")
                     print("Access denied when accessing {},"
