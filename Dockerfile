@@ -3,13 +3,17 @@ FROM python:3.7-slim
 
 # Set the working directory to /app
 WORKDIR /app
-
+ARG DEBIAN_FRONTEND=noninteractive
+RUN ln -s /usr/bin/dpkg-split /usr/sbin/dpkg-split
+RUN ln -s /usr/bin/dpkg-deb /usr/sbin/dpkg-deb
+RUN ln -s /bin/tar /usr/sbin/tar
+RUN ln -s /bin/rm /usr/sbin/rm
 RUN apt-get update \
     && apt-get install -y \
         apt-utils \
         gcc \
         g++ \
-        libffi-dev libssl-dev python3-dev \
+        libffi-dev libssl-dev python-pip \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
@@ -17,7 +21,7 @@ COPY requirements.txt /app
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt \
-    && apt-get purge -y --auto-remove gcc g++ libffi-dev libssl-dev python3-dev
+    && apt-get purge -y --auto-remove gcc g++ libffi-dev libssl-dev python-pip
 
 # Copy the current directory contents into the container at /app
 COPY . /app
