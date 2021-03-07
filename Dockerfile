@@ -1,5 +1,5 @@
 # Use an official Python runtime as a parent image
-FROM python:3.7-slim
+FROM python:3.8-slim
 
 # Set the working directory to /app
 WORKDIR /app
@@ -13,15 +13,16 @@ RUN apt-get update \
         apt-utils \
         gcc \
         g++ \
-        libffi-dev libssl-dev python-pip \
+        build-essential libssl-dev libffi-dev python-dev python-pip python3-dev cargo  \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt /app
+RUN python -m pip install -U pip
 
 # Install any needed packages specified in requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt \
-    && apt-get purge -y --auto-remove gcc g++ libffi-dev libssl-dev python-pip
+    && apt-get purge -y --auto-remove gcc g++ build-essential libssl-dev libffi-dev python-dev python-pip python3-dev cargo
 
 # Copy the current directory contents into the container at /app
 COPY . /app
