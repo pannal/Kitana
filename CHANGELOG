@@ -1,6 +1,7 @@
 0.4.1
 - handle plugin errors more explicitly
 - try to avoid TooManyRedirects
+- update dependencies
 
 0.4.0-2
 - rediscover PMS when SSL error occurred
