@@ -61,7 +61,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.4.0-2"
+    VERSION = "0.4.1"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -634,26 +634,54 @@ class Kitana(object):
 
         try:
             return self.render_plugin(path)
+
         except (HTTPError, Timeout, requests.exceptions.SSLError) as e:
-            if not isinstance(e, Timeout):
-                if e.response.status_code == 401:
-                    message("Access denied on {}".format(self.server_name), "ERROR")
-                    print("Access denied when accessing {},"
-                          " going to server selection".format(mask_str(self.server_name)))
-                    self.server_name = None
-                    self.connection = None
-                    raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
-                elif e.response.status_code == 404:
-                    raise cherrypy.HTTPRedirect(cherrypy.url("/plugins"))
+            urlTried = getattr(getattr(e, "request", ""), "url", None)
+            if urlTried:
+                urlTried = mask_url(urlTried)
 
-            else:
-                message("Timeout on {}".format(self.server_name), "WARNING")
+            try:
+                if not isinstance(e, Timeout):
+                    if hasattr(e.response, "status_code"):
+                        if e.response.status_code == 401:
+                            message("Access denied on {}".format(self.server_name), "ERROR")
+                            print("Access denied when accessing {},"
+                                  " going to server selection".format(mask_str(self.server_name)))
+                            self.server_name = None
+                            self.connection = None
+                            raise cherrypy.HTTPRedirect(cherrypy.url("/servers"))
+                        elif e.response.status_code == 404:
+                            raise cherrypy.HTTPRedirect(cherrypy.url("/"))
 
-            message("Error on {} (see log): {}".format(self.server_name, e), "ERROR")
-            traceback.print_exc()
-            print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
-                                                                                         mask_str(self.server_name)))
-            return self.discover_pms(self.server_name)
+                else:
+                    message("Timeout on {}".format(self.server_name), "WARNING")
+
+                if hasattr(e.response, "text") and e.response.text:
+                    print("Plugin response: {}".format(e.response.text))
+
+                if hasattr(e.response, "status_code") and e.response.status_code != 500:
+                    message("Error on {} (see log): {}".format(self.server_name, e), "ERROR")
+                    traceback.print_exc()
+                    print("Error when connecting to '{}', trying other connection to: {}".format(mask_url(self.server_addr),
+                                                                                                 mask_str(self.server_name)))
+                    return self.discover_pms(self.server_name)
+                else:
+                    message("Plugin error on {} (see log): {}".format(self.server_name, e), "ERROR")
+                    traceback.print_exc()
+                    raise cherrypy.HTTPRedirect(cherrypy.url("/"))
+            except cherrypy.HTTPRedirect:
+                # intercept redirects to avoid infinite redirects
+                lastUrls = cherrypy.session.get("last_urls", [])
+                lastUrls.append(urlTried)
+
+                if lastUrls.count(urlTried) > 2:
+                    print("Tried to reach {} 3 times. Not retrying.".format(urlTried))
+                    message("Tried to reach {} 3 times. Not retrying.".format(urlTried), "ERROR")
+                    cherrypy.session["last_urls"] = []
+                    return self.discover_pms(self.server_name)
+
+                cherrypy.session["last_urls"] = lastUrls
+                raise
         except HTTPRedirect:
             raise
         except:
