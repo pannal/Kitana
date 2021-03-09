@@ -2,7 +2,7 @@
 {% block head %}
     <script>
         $(function () {
-            $('#servers li').on("click", function (e) {
+            $('#servers li:not(.no-click)').on("click", function (e) {
                 let $el = $(e.currentTarget), server_name = $el.data("server_name"),
                     server_addr = $el.data("server_addr");
                 if (server_name && server_addr) {
@@ -28,11 +28,14 @@
                 <div class="card-body">
                     <ul class="list-group list-group-flush">
                         {% for connection in data["connections"] %}
-                            <li class="list-group-item" data-server_name="{{ server }}"
+                            <li class="list-group-item{% if connection.NA %} no-click{% endif %}" data-server_name="{{ server }}"
                                 data-server_addr="{% if connection.relay == "1" %}relay{% else %}{{ connection.uri }}{% endif %}">
                                 {{ connection.address }}:{{ connection.port }}&nbsp;
                                 {% if connection.unavailable %}
                                     <span class="badge badge-warning">unavailable</span>
+                                {% endif %}
+                                {% if connection.NA %}
+                                    <span class="badge badge-danger">not connectable</span>
                                 {% endif %}
                                 {% if connection.local == "1" %}
                                     <span class="badge badge-primary">local</span>

@@ -1,3 +1,6 @@
+0.4.2
+- check connection to PMS in server detection
+
 0.4.1
 - handle plugin errors more explicitly
 - try to avoid TooManyRedirects

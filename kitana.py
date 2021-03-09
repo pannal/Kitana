@@ -3,6 +3,8 @@ import hashlib
 import os
 import io
 import platform
+import socket
+
 import cherrypy
 import requests
 import xmltodict
@@ -61,7 +63,7 @@ def maintenance():
 
 class Kitana(object):
     PRODUCT_IDENTIFIER = "Kitana"
-    VERSION = "0.4.1"
+    VERSION = "0.4.2"
     CLIENT_IDENTIFIER_BASE = "{}_{}".format(PRODUCT_IDENTIFIER, VERSION)
     initialized = False
     timeout = 5
@@ -430,6 +432,22 @@ class Kitana(object):
                     connection["unavailable"] = True
                     continue
 
+                try:
+                    socket.create_connection((connection["address"], connection["port"]), timeout=self.timeout)
+                except OSError:
+                    print("{}: {} Skipping unreachable connection".format(mask_str(device["name"]),
+                                                                          mask_url(connection["uri"])))
+                    continue
+                else:
+                    print("{}: {} Socket Connection successful".format(mask_str(device["name"]),
+                                                                       mask_url(connection["uri"])))
+                    try:
+                        self.session.get(connection["uri"] + "/servers", headers=self.full_headers, **self.req_defaults)
+                    except:
+                        print("{}: {} Skipping unreachable connection (2)".format(mask_str(device["name"]),
+                                                                                  mask_url(connection["uri"])))
+                        traceback.print_exc()
+
                 servers[device["name"]]["connections"].append(connection)
                 if server_name and server_name == device["name"]:
                     if server_addr and connection["uri"] == server_addr:
@@ -452,7 +470,6 @@ class Kitana(object):
             server_addr = use_connection["uri"]
 
             print("Server set to: {}, {}".format(mask_str(server_name), mask_url(server_addr)))
-            print("Verifying {}: {}".format(mask_str(server_name), mask_url(server_addr)))
             try:
                 self.session.get(self.server_addr + "servers", headers=self.full_headers, **self.req_defaults)
             except HTTPError as e:
@@ -733,7 +750,7 @@ if __name__ == "__main__":
     parser.add_argument('--shadow-assets', type=bool, default=not isWin32, metavar="BOOL", nargs="?", const=True,
                         help="Pass PMS assets through the app to avoid exposing the plex token? (default: {})"
                         .format(not isWin32))
-    parser.add_argument('-t', '--timeout', type=int, default=15,
+    parser.add_argument('-t', '--timeout', type=int, default=5,
                         help="Connection timeout to the PMS (default: 5)")
     parser.add_argument('-pt', '--plextv-timeout', type=int, default=25,
                         help="Connection timeout to the Plex.TV API (default: 15)")

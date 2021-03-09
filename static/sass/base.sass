@@ -151,6 +151,12 @@ $bgOpacity: opacity(30%)
 #servers li, #plugins .plugin
   cursor: pointer
 
+  &.no-click
+    background-color: $dark
+    cursor: default
+    &:hover
+      background-color: $dark
+
 #plugins .plugin
   img
     max-width: 80px
