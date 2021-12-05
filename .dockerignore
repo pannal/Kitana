@@ -1,4 +1,21 @@
+# Saved sessions
 data/sessions/*
+# Compiled files
 static/css/*
-__pycache__/*
-venv/*
+__pycache__
+# Unused by runtime
+.*
+README.md
+LICENSE*
+Dockerfile*
+CHANGELOG
+# Windows
+util/win32.py
+requirements_win32.txt
+# Virtual Environment
+venv
+Lib
+Scripts
+Include
+share
+tcl
