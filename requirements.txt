@@ -8,4 +8,4 @@ furl==2.1.3
 ndg-httpsclient==0.5.1
 certifi==2021.10.8
 cffi==1.15.0
-cryptography==3.3.2
+cryptography<3.5

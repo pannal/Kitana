@@ -1,3 +1,7 @@
+0.4.3-1
+- fix cross-platform building (buildx)
+- update dependency: cryptography 3.3.2-><3.5
+
 0.4.3
 - make docker image leaner (reduced to 10% of its original size; thanks @BrutuZ
 - update dependencies:

@@ -12,7 +12,7 @@ COPY . .
 # - Install and compile required Python packgages
 # - Remove packages needed only for compiling
 RUN apk add -U --repository=http://dl-cdn.alpinelinux.org/alpine/v3.13/main \
-    gcc g++ musl-dev openssl-dev libffi-dev 'python3-dev=~3.8' cargo build-base \
+    gcc g++ musl-dev openssl-dev libffi-dev cargo build-base \
     libstdc++ \
     && pip install --trusted-host pypi.python.org -r requirements.txt \
     && apk del -r --purge \
