@@ -1,11 +1,10 @@
 # <img src="https://github.com/pannal/Kitana/raw/master/static/img/android-icon-36x36.png" align="left" height="36" style="vertical-align: center">Kitana
-[![](https://img.shields.io/github/release/pannal/Kitana.svg?style=flat&label=current)](https://github.com/pannal/Kitana/releases/latest) [![Maintenance](https://img.shields.io/maintenance/yes/2021.svg)]() [![Slack Status](https://szslack.fragstore.net/badge.svg)](https://szslack.fragstore.net) [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]()
+[![](https://img.shields.io/github/release/pannal/Kitana.svg?style=flat&label=current)](https://github.com/pannal/Kitana/releases/latest) [![Maintenance](https://img.shields.io/maintenance/yes/2022.svg)]() [![Slack Status](https://szslack.fragstore.net/badge.svg)](https://szslack.fragstore.net) [![master](https://img.shields.io/badge/master-stable-green.svg?maxAge=2592000)]()
 
 A responsive Plex plugin web frontend
 
 
 If you like this, buy me a beer: <br>[![Donate](https://www.paypalobjects.com/en_US/i/btn/btn_donate_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=G9VKR2B8PMNKG) <br>or become a Patreon starting at **1 $ / month** <br><a href="https://www.patreon.com/subzero_plex" target="_blank"><img src="https://cdn.iconscout.com/icon/free/png-256/patreon-282262.png" height="54" /></a>
-
 
 
 ## Introduction
