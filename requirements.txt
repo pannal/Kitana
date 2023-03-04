@@ -1,5 +1,5 @@
 cryptography<3.5
-cherrypy==18.6.1
+cherrypy==18.8.0
 requests==2.26.0
 xmltodict==0.12.0
 libsass==0.21.0
