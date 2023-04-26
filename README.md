@@ -65,7 +65,7 @@ This launches Kitana on port 31337:
       - 31337:31337
     #links:
     #  - plex
-    command: -B 0.0.0.0:31337 -p /kitana -P
+    command: -B 0.0.0.0:31337 -P
     restart: unless-stopped
 ```
 
